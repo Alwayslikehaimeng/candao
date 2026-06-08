@@ -38,9 +38,13 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "installationDirectory": "C:\\Program Files\\CanDao",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "CanDao",
+      "menuGroup": "CanDao",
+      "deleteAppDataOnUninstall": false,
       "artifactName": "CanDao-${version}-win-x64.${ext}"
     },
     "artifactName": "CanDao-${version}-win-x64.${ext}"
