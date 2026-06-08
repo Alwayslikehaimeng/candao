@@ -142,10 +142,10 @@ export default function App() {
           {/* 快捷链接 */}
           <div className="sidebar-links">
             {[
-              { label: 'FANZA', url: 'https://www.dmm.co.jp/mono/', icon: '/favicons/fanza.ico' },
-              { label: 'JavBus', url: 'https://www.javbus.com/', icon: '/favicons/javbus.ico' },
-              { label: 'XSList', url: 'https://xslist.org/zh', icon: '/favicons/xslist.ico' },
-              { label: '98堂', url: 'https://dmn12.vip/', icon: '/favicons/dmn12.ico' },
+              { label: 'FANZA', url: 'https://www.dmm.co.jp/mono/', icon: new URL('./assets/favicons/fanza.ico', import.meta.url).href },
+              { label: 'JavBus', url: 'https://www.javbus.com/', icon: new URL('./assets/favicons/javbus.ico', import.meta.url).href },
+              { label: 'XSList', url: 'https://xslist.org/zh', icon: new URL('./assets/favicons/xslist.ico', import.meta.url).href },
+              { label: '98堂', url: 'https://dmn12.vip/', icon: new URL('./assets/favicons/dmn12.ico', import.meta.url).href },
             ].map((link) => (
               <div
                 key={link.label}
