@@ -142,10 +142,10 @@ export default function App() {
           {/* 快捷链接 */}
           <div className="sidebar-links">
             {[
-              { label: 'FANZA', url: 'https://www.dmm.co.jp/mono/', color: '#FF4FA3' },
-              { label: 'JavBus', url: 'https://www.javbus.com/', color: '#E53935' },
-              { label: 'XSList', url: 'https://xslist.org/zh', color: '#43A047' },
-              { label: '98堂', url: 'https://dmn12.vip/', color: '#FF9800' },
+              { label: 'FANZA', url: 'https://www.dmm.co.jp/mono/', icon: '/favicons/fanza.ico' },
+              { label: 'JavBus', url: 'https://www.javbus.com/', icon: '/favicons/javbus.ico' },
+              { label: 'XSList', url: 'https://xslist.org/zh', icon: '/favicons/xslist.ico' },
+              { label: '98堂', url: 'https://dmn12.vip/', icon: '/favicons/dmn12.ico' },
             ].map((link) => (
               <div
                 key={link.label}
@@ -153,9 +153,7 @@ export default function App() {
                 onClick={() => window.api.openExternal(link.url)}
                 title={sidebarCollapsed ? link.label : undefined}
               >
-                <span className="sidebar-link-icon" style={{ background: link.color, color: '#fff', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: 4 }}>
-                  {link.label[0]}
-                </span>
+                <img className="sidebar-link-icon" src={link.icon} alt="" />
                 {!sidebarCollapsed && <span className="sidebar-item-label">{link.label}</span>}
               </div>
             ))}
