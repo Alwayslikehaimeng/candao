@@ -41,7 +41,8 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "CanDao"
-    }
+    },
+    "artifactName": "CanDao-${version}-win-x64.${ext}"
   },
   "dependencies": {
     "@ant-design/icons": "^5.3.0",
