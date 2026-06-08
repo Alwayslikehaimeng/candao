@@ -10,6 +10,7 @@ function createWindow(): void {
     minWidth: 1200,
     minHeight: 800,
     show: false,
+    autoHideMenuBar: true,
     backgroundColor: '#1A1A2E',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     frame: true,
@@ -18,6 +19,9 @@ function createWindow(): void {
       sandbox: false
     }
   })
+
+  mainWindow.removeMenu()
+  mainWindow.setMenuBarVisibility(false)
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
