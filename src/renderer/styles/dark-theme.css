@@ -1,0 +1,188 @@
+/* ===== 深色主题 ===== */
+[data-theme="dark"] {
+  /* 主色调 - 紫色 */
+  --candao-pink: #9B59B6;
+  --candao-pink-light: #B07CC6;
+  --candao-pink-dark: #7B3F96;
+  --candao-pink-bg: #2D1B4E;
+  --candao-pink-hover: #3D2B5E;
+
+  /* 背景色 */
+  --candao-bg: #1A1A2E;
+  --candao-bg-white: #16213E;
+  --candao-bg-card: #1E2A4A;
+  --candao-bg-hover: #253555;
+  --candao-bg-active: #2D1B4E;
+
+  /* 文字色 */
+  --candao-text: #E0E0E0;
+  --candao-text-secondary: #A0A0B8;
+  --candao-text-muted: #6A6A80;
+  --candao-text-light: #4A4A60;
+
+  /* 边框 */
+  --candao-border: #2A3A5C;
+  --candao-border-light: #1E2D4A;
+
+  /* 阴影 */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.15);
+  --shadow-card-hover: 0 8px 24px rgba(155, 89, 182, 0.15);
+}
+
+/* 深色主题下的特定组件样式 */
+[data-theme="dark"] .sidebar {
+  background: #16213E;
+  border-right-color: #2A3A5C;
+}
+
+[data-theme="dark"] .top-bar {
+  background: #1A1A2E;
+}
+
+[data-theme="dark"] .video-card {
+  background: #1E2A4A;
+}
+
+[data-theme="dark"] .video-card-title {
+  color: #A0A0B8;
+}
+
+[data-theme="dark"] .video-card:hover .video-card-title {
+  color: #B07CC6;
+}
+
+[data-theme="dark"] .video-card-code {
+  color: #6A6A80;
+}
+
+[data-theme="dark"] .video-card-badge {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+[data-theme="dark"] .detail-right {
+  border-left-color: #2A3A5C;
+}
+
+[data-theme="dark"] .detail-meta-input,
+[data-theme="dark"] .detail-section-input,
+[data-theme="dark"] .detail-section-textarea {
+  background: #0D1525;
+  border-color: #2A3A5C;
+  color: #E0E0E0;
+}
+
+[data-theme="dark"] .detail-meta-input:focus,
+[data-theme="dark"] .detail-section-input:focus,
+[data-theme="dark"] .detail-section-textarea:focus {
+  border-color: #9B59B6;
+  background: #16213E;
+}
+
+[data-theme="dark"] .detail-title-input {
+  color: #E0E0E0;
+}
+
+[data-theme="dark"] .detail-title-input::placeholder {
+  color: #6A6A80;
+}
+
+[data-theme="dark"] .detail-meta-label,
+[data-theme="dark"] .detail-section-label {
+  color: #6A6A80;
+}
+
+[data-theme="dark"] .detail-save-bar {
+  background: #16213E;
+  border-top-color: #2A3A5C;
+}
+
+[data-theme="dark"] .detail-back-btn {
+  color: #A0A0B8;
+}
+
+[data-theme="dark"] .detail-back-btn:hover {
+  background: #253555;
+  color: #E0E0E0;
+}
+
+[data-theme="dark"] .sidebar-item {
+  color: #A0A0B8;
+}
+
+[data-theme="dark"] .sidebar-item:hover {
+  background: #253555;
+  color: #E0E0E0;
+}
+
+[data-theme="dark"] .sidebar-item.active {
+  background: #2D1B4E;
+  color: #B07CC6;
+}
+
+[data-theme="dark"] .sidebar-divider {
+  background: #2A3A5C;
+}
+
+[data-theme="dark"] .sidebar-add-btn {
+  background: #9B59B6;
+}
+
+[data-theme="dark"] .sidebar-add-btn:hover {
+  background: #7B3F96;
+  box-shadow: 0 4px 12px rgba(155, 89, 182, 0.3);
+}
+
+[data-theme="dark"] .top-bar-search {
+  background: #0D1525;
+  border-color: #2A3A5C;
+  color: #E0E0E0;
+}
+
+[data-theme="dark"] .top-bar-search::placeholder {
+  color: #6A6A80;
+}
+
+[data-theme="dark"] .top-bar-search:focus {
+  border-color: #9B59B6;
+}
+
+[data-theme="dark"] .top-bar-btn {
+  background: #16213E;
+  border-color: #2A3A5C;
+  color: #A0A0B8;
+}
+
+[data-theme="dark"] .top-bar-btn:hover {
+  border-color: #9B59B6;
+  color: #B07CC6;
+  background: #2D1B4E;
+}
+
+[data-theme="dark"] .skeleton {
+  background: linear-gradient(90deg, #1E2A4A 25%, #253555 50%, #1E2A4A 75%);
+  background-size: 200% 100%;
+}
+
+[data-theme="dark"] .empty-state-title {
+  color: #A0A0B8;
+}
+
+[data-theme="dark"] .empty-state-desc {
+  color: #6A6A80;
+}
+
+[data-theme="dark"] .vct-tooltip {
+  background: linear-gradient(135deg, rgba(30, 42, 74, 0.95), rgba(22, 33, 62, 0.95));
+  color: #E0E0E0;
+  box-shadow:
+    0 6px 24px rgba(0, 0, 0, 0.3),
+    0 2px 6px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(155, 89, 182, 0.2);
+}
+
+[data-theme="dark"] .video-card-poster {
+  background: linear-gradient(135deg, #0D1525, #1A1A2E);
+}
