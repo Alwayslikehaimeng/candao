@@ -40,7 +40,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "CanDao"
+      "shortcutName": "CanDao",
+      "artifactName": "CanDao-${version}-win-x64.${ext}"
     },
     "artifactName": "CanDao-${version}-win-x64.${ext}"
   },
