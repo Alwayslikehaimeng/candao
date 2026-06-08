@@ -220,6 +220,23 @@ export default function DetailPage({ videoId, onBack }: Props) {
           <div className="detail-title-below">
             {title || video.code}
           </div>
+
+          {/* 文件信息 */}
+          {!editing && (
+            <div className="detail-file-info">
+              {[
+                { label: '格式', value: video.file_path?.split('.').pop()?.toUpperCase() || '—' },
+                { label: '分辨率', value: video.resolution || '—' },
+                { label: '时长', value: duration ? `${Math.floor(parseInt(duration) / 3600).toString().padStart(2, '0')}:${Math.floor((parseInt(duration) % 3600) / 60).toString().padStart(2, '0')}:${(parseInt(duration) % 60).toString().padStart(2, '0')}` : '—' },
+                { label: '导入时间', value: video.created_at?.split('T')[0] || video.created_at?.split(' ')[0] || '—' },
+              ].map((item, i) => (
+                <div key={i} className="detail-file-info-row">
+                  <span className="detail-file-info-label">{item.label}</span>
+                  <span className="detail-file-info-value">{item.value}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* 右侧信息 */}
@@ -250,6 +267,8 @@ export default function DetailPage({ videoId, onBack }: Props) {
                 <StarRating score={rating} size="md" />
               )}
             </div>
+
+
             <div className="detail-meta-item">
               <span className="detail-meta-label">发行日期</span>
               {editing ? (

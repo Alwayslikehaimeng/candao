@@ -180,8 +180,8 @@ body {
 /* 壁纸模式 - 详情页 */
 .theme-wallpaper .detail-right {
   background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03)) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
   border: 1px solid rgba(255, 255, 255, 0.06) !important;
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5) !important;
 }
@@ -631,6 +631,26 @@ body {
   background: var(--candao-pink-dark);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(255, 143, 177, 0.3);
+}
+
+/* 快捷链接 */
+.sidebar-links {
+  margin-top: auto;
+  padding: 0 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.sidebar-links .sidebar-item {
+  font-size: 12px;
+  opacity: 0.7;
+}
+.sidebar-links .sidebar-item:hover {
+  opacity: 1;
+}
+.sidebar-link-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: contain;
 }
 
 /* ===== 主内容区 ===== */
@@ -1107,8 +1127,8 @@ body {
   padding: 28px;
   border-radius: 28px;
   background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05));
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
   position: relative;
@@ -1489,12 +1509,13 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .modal-content {
-  background: rgba(20, 20, 30, 0.85);
-  backdrop-filter: blur(24px) saturate(1.2);
-  -webkit-backdrop-filter: blur(24px) saturate(1.2);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(25, 20, 25, 0.88);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 20px;
-  width: 90%;
+  width: 760px;
+  max-width: 90%;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -1502,7 +1523,108 @@ input[type="range"]::-webkit-slider-thumb {
   color: #fff;
 }
 
+/* ===== AddVideoModal 表单样式 ===== */
+.modal-content .form-group {
+  margin-bottom: 16px;
+}
+.modal-content .form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.8;
+  margin-bottom: 6px;
+  color: #fff;
+}
+.modal-content .form-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.25);
+  color: #fff;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+.modal-content .form-input:hover {
+  border-color: var(--candao-pink);
+}
+.modal-content .form-input:focus {
+  border-color: var(--candao-pink);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 143, 177, 0.15);
+}
+.modal-content .form-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
 
+/* 分类选择胶囊 */
+.modal-content .filter-chips {
+  display: flex;
+  gap: 8px;
+}
+.modal-content .filter-chip {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  transition: all 0.2s ease;
+}
+.modal-content .filter-chip:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.9);
+}
+.modal-content .filter-chip.active {
+  background: rgba(255, 143, 177, 0.2);
+  border-color: var(--candao-pink);
+  color: var(--candao-pink);
+}
+
+/* 底部按钮 */
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.modal-footer .btn-succubus {
+  height: 40px;
+  border-radius: 10px;
+}
+.modal-footer .btn-succubus-primary {
+  background: linear-gradient(135deg, var(--candao-pink), var(--candao-pink-dark));
+  border: none;
+}
+
+/* 文件信息区域 */
+.detail-file-info {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 12px;
+}
+.detail-file-info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 13px;
+}
+.detail-file-info-row:not(:last-child) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.detail-file-info-label {
+  color: rgba(255, 255, 255, 0.5);
+}
+.detail-file-info-value {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
 
 .modal-header {
   padding: 20px 24px;
@@ -1543,15 +1665,6 @@ input[type="range"]::-webkit-slider-thumb {
   overflow-y: auto;
   flex: 1;
   max-height: calc(90vh - 130px);
-}
-
-.modal-footer {
-  padding: 16px 24px;
-  border-top: 1px solid var(--candao-border-light);
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  flex-shrink: 0;
 }
 
 /* ===== 批量管理 ===== */

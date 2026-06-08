@@ -1,6 +1,6 @@
 {
   "name": "candao",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "喰导 - 本地视频归档管理软件",
   "main": "./out/main/index.js",
   "author": "CanDao Team",
@@ -30,7 +30,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },

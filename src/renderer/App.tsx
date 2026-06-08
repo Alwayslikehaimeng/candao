@@ -139,6 +139,31 @@ export default function App() {
             </div>
           </nav>
 
+          {/* 快捷链接 */}
+          <div className="sidebar-links">
+            {[
+              { label: 'FANZA', url: 'https://www.dmm.co.jp/mono/', icon: 'https://www.dmm.co.jp/favicon.ico' },
+              { label: 'JavBus', url: 'https://www.javbus.com/', icon: 'https://www.javbus.com/favicon.ico' },
+              { label: 'XSList', url: 'https://xslist.org/zh', icon: 'https://xslist.org/favicon.ico' },
+              { label: '98堂', url: 'https://dmn12.vip/', icon: 'https://dmn12.vip/favicon.ico' },
+            ].map((link) => (
+              <div
+                key={link.label}
+                className="sidebar-item"
+                onClick={() => window.api.openExternal(link.url)}
+                title={sidebarCollapsed ? link.label : undefined}
+              >
+                <img
+                  className="sidebar-link-icon"
+                  src={link.icon}
+                  alt=""
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                />
+                {!sidebarCollapsed && <span className="sidebar-item-label">{link.label}</span>}
+              </div>
+            ))}
+          </div>
+
           <button
             className="sidebar-add-btn"
             onClick={() => setShowAdd(true)}
