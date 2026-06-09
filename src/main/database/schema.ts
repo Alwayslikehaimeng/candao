@@ -70,6 +70,7 @@ export async function initDatabase(): Promise<void> {
     }
   }
   addColumnIfNotExists('videos', 'fanza_url', 'TEXT')
+  addColumnIfNotExists('videos', 'source', 'TEXT')
 
   db.run(`
     CREATE TABLE IF NOT EXISTS actors (
