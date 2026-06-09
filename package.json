@@ -44,7 +44,7 @@
       "allowElevation": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "CanDao",
+      "shortcutName": "喰导",
       "menuCategory": "CanDao",
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
