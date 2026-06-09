@@ -12,6 +12,7 @@ function createWindow(): void {
     show: false,
     autoHideMenuBar: true,
     backgroundColor: '#1A1A2E',
+    icon: join(__dirname, '../../build/icon.ico'),
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     frame: true,
     webPreferences: {
