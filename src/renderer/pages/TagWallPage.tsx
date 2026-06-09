@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Spin } from 'antd'
 import { SearchOutlined } from '@ant-design/icons'
 import type { TagWithCount } from '../../shared/types'
@@ -11,22 +11,22 @@ export default function TagWallPage({ onSelectTag }: Props) {
   const [tags, setTags] = useState<TagWithCount[]>([])
   const [loading, setLoading] = useState(true)
   const [searchText, setSearchText] = useState('')
-  const [suggestions, setSuggestions] = useState<TagWithCount[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const searchRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     loadTags()
   }, [])
 
   useEffect(() => {
-    if (searchText.trim()) {
-      const filtered = tags
-        .filter(t => t.name.toLowerCase().includes(searchText.toLowerCase()))
-        .slice(0, 5)
-      setSuggestions(filtered)
-    } else {
-      setSuggestions([])
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false)
+      }
     }
-  }, [searchText, tags])
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const loadTags = async () => {
     setLoading(true)
@@ -37,6 +37,10 @@ export default function TagWallPage({ onSelectTag }: Props) {
       setLoading(false)
     }
   }
+
+  const suggestions = searchText.trim()
+    ? tags.filter(t => t.name.toLowerCase().includes(searchText.toLowerCase())).slice(0, 5)
+    : []
 
   const filteredTags = searchText.trim()
     ? tags.filter(t => t.name.toLowerCase().includes(searchText.toLowerCase()))
@@ -51,24 +55,27 @@ export default function TagWallPage({ onSelectTag }: Props) {
           <span className="top-bar-count">{tags.length} 个</span>
         </div>
         <div className="top-bar-spacer" />
-        <div className="top-bar-search-wrap">
-          <SearchOutlined className="top-bar-search-icon" />
+        <div className="tag-search-wrap" ref={searchRef}>
+          <SearchOutlined className="tag-search-icon" />
           <input
-            className="top-bar-search"
-            placeholder="搜索标签..."
+            className="tag-search-input"
+            placeholder="搜索"
             value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
+            onChange={(e) => { setSearchText(e.target.value); setShowSuggestions(true) }}
+            onFocus={() => setShowSuggestions(true)}
           />
           {/* 搜索建议 */}
-          {suggestions.length > 0 && (
+          {showSuggestions && suggestions.length > 0 && (
             <div className="tag-search-suggestions">
               {suggestions.map(tag => (
                 <div
                   key={tag.id}
                   className="tag-search-suggestion"
-                  onClick={() => {
+                  onMouseDown={(e) => {
+                    e.preventDefault()
                     onSelectTag(tag.name)
                     setSearchText('')
+                    setShowSuggestions(false)
                   }}
                 >
                   <span>{tag.name}</span>

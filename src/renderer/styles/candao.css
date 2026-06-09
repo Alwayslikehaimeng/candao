@@ -1667,19 +1667,53 @@ input[type="range"]::-webkit-slider-thumb {
   max-height: calc(90vh - 130px);
 }
 
-/* ===== 标签搜索建议 ===== */
-.top-bar-search-wrap {
+/* ===== 标签搜索 ===== */
+.tag-search-wrap {
   position: relative;
+}
+.tag-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 13px;
+  z-index: 1;
+}
+.tag-search-input {
+  width: 200px;
+  height: 36px;
+  padding: 0 12px 0 34px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #fff;
+  font-size: 13px;
+  transition: all 0.2s;
+  outline: none;
+}
+.tag-search-input:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.tag-search-input:focus {
+  border-color: var(--candao-pink);
+  background: rgba(255, 255, 255, 0.1);
+  width: 260px;
+}
+.tag-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
 }
 .tag-search-suggestions {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 6px);
   left: 0;
   right: 0;
-  margin-top: 4px;
+  min-width: 200px;
   background: rgba(30, 30, 40, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   overflow: hidden;
@@ -1692,7 +1726,7 @@ input[type="range"]::-webkit-slider-thumb {
   justify-content: space-between;
   padding: 10px 16px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.15s;
   color: rgba(255, 255, 255, 0.8);
   font-size: 13px;
 }
@@ -1703,6 +1737,9 @@ input[type="range"]::-webkit-slider-thumb {
 .tag-search-suggestion-count {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 8px;
+  border-radius: 10px;
 }
 
 /* ===== 批量管理 ===== */
