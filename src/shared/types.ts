@@ -66,6 +66,8 @@ export interface CrawlResult {
   rating: number | null
   description: string | null
   fanza_url?: string
+  javbus_url?: string
+  source?: 'FANZA' | 'JavBus' | 'FC2'
 }
 
 // 文件扫描结果

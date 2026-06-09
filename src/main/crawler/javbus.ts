@@ -1,6 +1,8 @@
 import axios from 'axios'
 import * as cheerio from 'cheerio'
 import { detectSystemProxy } from '../utils/proxy'
+import { translateToChinese } from '../utils/translate'
+import { aiTranslate, getApiKey } from '../utils/ai-translate'
 import type { CrawlResult, ProxyConfig } from '../../shared/types'
 
 let cachedProxy: { protocol: string; host: string; port: number } | null = null
@@ -120,8 +122,19 @@ export async function fetchJavbus(code: string, userProxy?: ProxyConfig): Promis
     throw new Error('JavBus 未找到标题（可能页面被墙或番号不存在）')
   }
 
+  // 翻译标题
+  const hasKey = !!getApiKey()
+  console.log('[JavBus] 翻译标题:', title)
+  const googleTitle = await translateToChinese(title)
+  let aiTitle = ''
+  if (hasKey) {
+    aiTitle = await aiTranslate(title, 'title')
+  }
+  const translatedTitle = (googleTitle && googleTitle !== title) ? googleTitle : (aiTitle || title)
+  console.log('[JavBus] 翻译结果:', translatedTitle)
+
   return {
-    title,
+    title: translatedTitle,
     cover_url: coverUrl,
     sample_image_urls: sampleImages,
     release_date: releaseDate || null,
@@ -131,6 +144,8 @@ export async function fetchJavbus(code: string, userProxy?: ProxyConfig): Promis
     maker: maker || null,
     tags,
     rating: null,
-    description: null
+    description: null,
+    source: 'JavBus',
+    javbus_url: detailUrl
   }
 }

@@ -108,11 +108,14 @@ export default function DetailPage({ videoId, onBack }: Props) {
           release_date: d.release_date || undefined, duration: d.duration || undefined,
           maker: d.maker || undefined, director: d.director || undefined,
           description: d.description || undefined, fanza_url: d.fanza_url || undefined,
-          actors: d.actors, tags: d.tags
+          actors: d.actors, tags: d.tags, source: d.source || undefined
         })
+        if (d.javbus_url) {
+          await window.api.updateVideo(videoId, { fanza_url: d.javbus_url })
+        }
         if (d.cover_url) await window.api.downloadImages(videoId, d.cover_url, d.sample_image_urls)
         await loadVideo()
-        message.success('抓取成功')
+        message.success(`抓取成功（${d.source || '未知'}）`)
       } else { message.error(result.error || '抓取失败') }
     } catch (e: any) { message.error('抓取失败: ' + e.message) }
     finally { setFetching(false) }
