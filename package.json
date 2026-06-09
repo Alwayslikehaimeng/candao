@@ -46,6 +46,8 @@
       "createStartMenuShortcut": true,
       "shortcutName": "CanDao",
       "menuCategory": "CanDao",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
       "artifactName": "CanDao-${version}-win-x64.${ext}"
     },
     "artifactName": "CanDao-${version}-win-x64.${ext}"
