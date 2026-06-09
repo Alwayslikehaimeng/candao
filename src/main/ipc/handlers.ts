@@ -14,6 +14,7 @@ import { scanFolder, parseCode } from '../scanner/scanner'
 import { probeVideo } from '../ffprobe/probe'
 import { fetchFanza } from '../crawler/fanza'
 import { fetchFc2 } from '../crawler/fc2'
+import { fetchJavbus } from '../crawler/javbus'
 import { downloadImage } from '../utils/download'
 import { getCoversDir, getSetting, setSetting } from '../database/schema'
 import { setApiKey, setApiBase, getApiKey, setModel } from '../utils/ai-translate'
@@ -57,13 +58,21 @@ export function registerIpcHandlers(): void {
     return getCategoryCounts()
   })
 
-  // 爬虫
+  // 爬虫（FANZA 优先，失败则尝试 JavBus）
   ipcMain.handle('crawler:fetchAv', async (_, code: string) => {
+    // 先尝试 FANZA
     try {
       const result = await fetchFanza(code, proxyConfig.enabled ? proxyConfig : undefined)
       return { success: true, data: result }
-    } catch (error: any) {
-      return { success: false, error: error.message }
+    } catch (fanzaError: any) {
+      console.log('[抓取] FANZA 失败:', fanzaError.message, '→ 尝试 JavBus')
+      // FANZA 失败，尝试 JavBus
+      try {
+        const result = await fetchJavbus(code, proxyConfig.enabled ? proxyConfig : undefined)
+        return { success: true, data: result }
+      } catch (javbusError: any) {
+        return { success: false, error: `FANZA: ${fanzaError.message} | JavBus: ${javbusError.message}` }
+      }
     }
   })
 
