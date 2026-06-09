@@ -1667,6 +1667,44 @@ input[type="range"]::-webkit-slider-thumb {
   max-height: calc(90vh - 130px);
 }
 
+/* ===== 标签搜索建议 ===== */
+.top-bar-search-wrap {
+  position: relative;
+}
+.tag-search-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: rgba(30, 30, 40, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  z-index: 100;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+.tag-search-suggestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+}
+.tag-search-suggestion:hover {
+  background: rgba(255, 143, 177, 0.15);
+  color: #fff;
+}
+.tag-search-suggestion-count {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
 /* ===== 批量管理 ===== */
 .batch-bar {
   display: flex;

@@ -108,6 +108,22 @@ export async function fetchJavbus(code: string, userProxy?: ProxyConfig): Promis
     }
   })
 
+  // 翻译标签（如果有日文标签）
+  const hasKey = !!getApiKey()
+  const untranslated = tags.filter(t => /[぀-ゟ゠-ヿ]/.test(t))
+  if (untranslated.length > 0 && hasKey) {
+    console.log('[JavBus] AI翻译标签:', untranslated)
+    const { aiTranslateTags } = await import('../utils/ai-translate')
+    const translated = await aiTranslateTags(untranslated)
+    const untranslatedSet = new Set(untranslated)
+    let aiIndex = 0
+    for (let i = 0; i < tags.length; i++) {
+      if (untranslatedSet.has(tags[i])) {
+        tags[i] = translated[aiIndex++] || tags[i]
+      }
+    }
+  }
+
   // 样例图
   const sampleImages: string[] = []
   $('a.bigImage img, .screencap img, #sample-waterfall a img').each((_, el) => {
@@ -123,7 +139,6 @@ export async function fetchJavbus(code: string, userProxy?: ProxyConfig): Promis
   }
 
   // 翻译标题
-  const hasKey = !!getApiKey()
   console.log('[JavBus] 翻译标题:', title)
   const googleTitle = await translateToChinese(title)
   let aiTitle = ''
