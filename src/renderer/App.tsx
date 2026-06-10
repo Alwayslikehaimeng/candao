@@ -152,6 +152,7 @@ export default function App() {
               { label: 'JavBus', url: 'https://www.javbus.com/', icon: new URL('./assets/favicons/javbus.ico', import.meta.url).href },
               { label: 'XSList', url: 'https://xslist.org/zh', icon: new URL('./assets/favicons/xslist.ico', import.meta.url).href },
               { label: '98堂', url: 'https://dmn12.vip/', icon: new URL('./assets/favicons/dmn12.ico', import.meta.url).href },
+              { label: '老王', url: 'https://laowangzo.top/', icon: new URL('./assets/favicons/laowang.ico', import.meta.url).href },
             ].map((link) => (
               <div
                 key={link.label}
