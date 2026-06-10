@@ -1,7 +1,9 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { Spin } from 'antd'
-import { SearchOutlined } from '@ant-design/icons'
+import { SearchOutlined, CloseCircleFilled } from '@ant-design/icons'
+import { buildTagSearchIndex, matchTag } from '../utils/pinyin'
 import type { TagWithCount } from '../../shared/types'
+import type { TagSearchIndex } from '../utils/pinyin'
 
 interface Props {
   onSelectTag: (tagName: string) => void
@@ -14,18 +16,21 @@ export default function TagWallPage({ onSelectTag }: Props) {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
 
+  // 预生成拼音索引（标签加载时只计算一次）
+  const searchIndex = useMemo(() => buildTagSearchIndex(tags), [tags])
+
   useEffect(() => {
     loadTags()
   }, [])
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-        setShowSuggestions(false)
-      }
+      const target = e.target as HTMLElement
+      if (target.closest('.tag-search-suggestion') || target.closest('.tag-search-wrap')) return
+      setShowSuggestions(false)
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
   }, [])
 
   const loadTags = async () => {
@@ -38,12 +43,15 @@ export default function TagWallPage({ onSelectTag }: Props) {
     }
   }
 
-  const suggestions = searchText.trim()
-    ? tags.filter(t => t.name.toLowerCase().includes(searchText.toLowerCase())).slice(0, 5)
+  // 拼音模糊搜索
+  const keyword = searchText.trim()
+  const matchedIndex = keyword
+    ? searchIndex.filter(idx => matchTag(idx, keyword))
     : []
 
-  const filteredTags = searchText.trim()
-    ? tags.filter(t => t.name.toLowerCase().includes(searchText.toLowerCase()))
+  const suggestions = matchedIndex.slice(0, 5).map(idx => idx.tag)
+  const filteredTags = keyword
+    ? matchedIndex.map(idx => idx.tag)
     : tags
 
   return (
@@ -64,6 +72,12 @@ export default function TagWallPage({ onSelectTag }: Props) {
             onChange={(e) => { setSearchText(e.target.value); setShowSuggestions(true) }}
             onFocus={() => setShowSuggestions(true)}
           />
+          {searchText && (
+            <CloseCircleFilled
+              className="tag-search-clear"
+              onClick={() => { setSearchText(''); setShowSuggestions(false) }}
+            />
+          )}
           {/* 搜索建议 */}
           {showSuggestions && suggestions.length > 0 && (
             <div className="tag-search-suggestions">
@@ -72,7 +86,7 @@ export default function TagWallPage({ onSelectTag }: Props) {
                   key={tag.id}
                   className="tag-search-suggestion"
                   onMouseDown={(e) => {
-                    e.preventDefault()
+                    e.preventDefault() // 阻止输入框失去焦点
                     onSelectTag(tag.name)
                     setSearchText('')
                     setShowSuggestions(false)
