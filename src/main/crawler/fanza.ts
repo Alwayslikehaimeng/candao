@@ -292,13 +292,46 @@ export async function fetchFanza(code: string, userProxy?: ProxyConfig): Promise
     })
   }
 
-  // 简介
+  // 简介（多个选择器兼容）
   let description = ''
-  const introEl = $('div.mg-b20.lh4, .txt.introduction, div[class*="summary"]').first()
-  if (introEl.length) description = introEl.text().trim()
+  const introSelectors = [
+    'div.mg-b20.lh4',
+    '.txt.introduction',
+    'div[class*="summary"]',
+    'div[class*="intro"]',
+    'div[class*="description"]',
+    'div[class*="story"]',
+    'p[class*="text"]',
+    '.mg-b20'
+  ]
+  for (const sel of introSelectors) {
+    const el = $(sel).first()
+    if (el.length && el.text().trim().length > 30) {
+      description = el.text().trim()
+      console.log('[FANZA] 简介匹配选择器:', sel, '长度:', description.length)
+      break
+    }
+  }
+  // 备用：og:description
   if (!description || description.length < 20) {
     description = $('meta[property="og:description"]').attr('content') || ''
+    if (description) console.log('[FANZA] 简介来自 og:description，长度:', description.length)
   }
+  // 备用：从页面中找包含剧情关键词的段落
+  if (!description || description.length < 20) {
+    $('p, div').each((_, el) => {
+      const text = $(el).text().trim()
+      if (text.length > 50 && text.length < 2000 &&
+          (text.includes('彼女') || text.includes('初めて') || text.includes('ある日') ||
+           text.includes('男') || text.includes('女') || text.includes('人妻'))) {
+        description = text
+        console.log('[FANZA] 简介来自关键词匹配，长度:', description.length)
+        return false
+      }
+    })
+  }
+  if (!description) console.log('[FANZA] 未找到简介')
+  console.log('[FANZA] 清理前简介长度:', description.length)
   // 清理日文广告：先去掉末尾广告后缀，再按句号分割过滤
   description = description
     .replace(/<[^>]*>/g, '')
@@ -310,23 +343,28 @@ export async function fetchFanza(code: string, userProxy?: ProxyConfig): Promise
     .replace(/FANZA[^。]*。?/g, '')
     .replace(/◇[^。]*。?/g, '')
     .trim()
-  const adKeywords = ['新品', '未開封', '未使用', '購入', '価格', '商品', 'メーカー',
-    'コンビニ', '受取', 'サービス', '発送', '梱包', '送料', '注文',
-    '写真集', 'クリック', '対象', '販売', '返品', 'アウトレット',
-    'FANZA', 'DVD', 'Outlet', '通販', 'お得', 'キャンペーン',
-    '詳細', 'こちら', 'ご購入', '返品交換', '弊社', 'お客様']
+  // 只删除明确的广告句（句子开头是广告关键词，或整句都是广告）
+  const adPatterns = [
+    /^コンビニ受取/, /^詳しくは/, /^こちらを/, /^◇/, /^[※＊★]/,
+    /^販売/, /^返品/, /^送料/, /^注文/, /^キャンペーン/, /^お得/,
+    /^アウトレット/, /^セール/, /^限定/, /^新品未開封/, /^レンタル/
+  ]
   const sentences = description.split(/。/)
   description = sentences
     .filter(s => {
       const trimmed = s.trim()
-      if (trimmed.length < 5) return false
-      if (trimmed.startsWith('*') || trimmed.startsWith('★') || trimmed.startsWith('※')) return false
-      if (adKeywords.some(kw => trimmed.includes(kw))) return false
+      if (trimmed.length < 3) return false
+      // 只删除匹配广告模式的句子
+      if (adPatterns.some(p => p.test(trimmed))) return false
       return true
     })
     .join('。')
     .trim()
-  if (description === title || description.startsWith(title.substring(0, 20))) description = ''
+  console.log('[FANZA] 清理后简介长度:', description.length)
+  if (description === title || description.startsWith(title.substring(0, 20))) {
+    console.log('[FANZA] 简介与标题重复，清空')
+    description = ''
+  }
 
   // 翻译
   const hasKey = !!getApiKey()

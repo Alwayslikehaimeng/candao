@@ -146,6 +146,20 @@ export async function fetchJavbus(code: string, userProxy?: ProxyConfig): Promis
     }
   }
 
+  // 简介
+  let description = ''
+  const descEl = $('div.mg-b20.lh4, .txt.introduction, div[class*="summary"], .paragraph').first()
+  if (descEl.length) description = descEl.text().trim()
+  if (!description || description.length < 20) {
+    description = $('meta[property="og:description"]').attr('content') || ''
+  }
+  // 翻译简介
+  if (description && hasKey) {
+    console.log('[JavBus] AI翻译简介')
+    const aiDesc = await aiTranslate(description, 'description')
+    if (aiDesc && aiDesc !== description) description = aiDesc
+  }
+
   // 样例图
   const sampleImages: string[] = []
   $('a.bigImage img, .screencap img, #sample-waterfall a img').each((_, el) => {
