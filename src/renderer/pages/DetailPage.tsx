@@ -108,6 +108,8 @@ export default function DetailPage({ videoId, onBack }: Props) {
           release_date: d.release_date || undefined, duration: d.duration || undefined,
           maker: d.maker || undefined, director: d.director || undefined,
           description: d.description || undefined, fanza_url: d.fanza_url || undefined,
+          series: d.series || undefined, label: d.label || undefined,
+          video_type: d.video_type || undefined, product_code: d.product_code || undefined,
           actors: d.actors, tags: d.tags, source: d.source || undefined
         })
         if (d.javbus_url) {

@@ -273,7 +273,13 @@ const PINYIN_MAP: Record<string, string> = {
 
 // 获取单个汉字的拼音
 function getCharPinyin(char: string): string {
-  return PINYIN_MAP[char] || char.toLowerCase()
+  // 先查字典
+  if (PINYIN_MAP[char]) return PINYIN_MAP[char]
+  // 字典没有的汉字，返回原字符
+  const code = char.charCodeAt(0)
+  if (code >= 0x4e00 && code <= 0x9fff) return char
+  // 非汉字（字母、数字等）返回小写
+  return char.toLowerCase()
 }
 
 // 获取整个字符串的拼音
@@ -337,7 +343,7 @@ export function buildTagSearchIndex(tags: { id: number; name: string; count: num
 
 // 搜索匹配
 export function matchTag(index: TagSearchIndex, keyword: string): boolean {
-  const lowerKeyword = keyword.toLowerCase()
+  const lowerKeyword = keyword.toLowerCase().replace(/['`\-_\s]/g, '') // 移除分隔符
   // 匹配原文
   if (index.tag.name.toLowerCase().includes(lowerKeyword)) return true
   // 匹配拼音键

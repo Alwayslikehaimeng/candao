@@ -99,16 +99,38 @@ export async function fetchJavbus(code: string, userProxy?: ProxyConfig): Promis
     }
   })
 
-  // 标签
+  // 标签（排除演员名）
   const tags: string[] = []
+  const actorSet = new Set(actors)
   $('span.genre a[href*="genre"], .genre a').each((_, el) => {
     const tag = $(el).text().trim()
-    if (tag && !tags.includes(tag)) {
+    if (tag && !tags.includes(tag) && !actorSet.has(tag)) {
       tags.push(tag)
     }
   })
 
-  // 翻译标签（如果有日文标签）
+  // 翻译标签（词典 + AI）
+  const TAG_DICT: Record<string, string> = {
+    '人妻': '已婚女性', '若妻': '年轻妻子', '美人妻': '美人妻', '女教師': '女教师',
+    '女医': '女医生', '看護師': '护士', '秘書': '秘书', 'メイド': '女仆',
+    'ギャル': '辣妹', '美少女': '美少女', '清楚系': '清纯系', 'お嬢様': '大小姐',
+    '巨乳': '丰满身材', '微乳': '小巧身材', '美脚': '美腿', '美尻': '美臀',
+    '童顔': '娃娃脸', 'スレンダー': '苗条', 'グラマー': '丰满',
+    '中出し': '中出', '潮吹き': '潮吹', '顔射': '颜射', 'アナル': '肛交',
+    'オナニー': '自慰', 'レズ': '女同', 'SM': 'SM', '3P': '3P',
+    'ハイビジョン': '高清', '4K': '4K', 'VR': 'VR', '主観': '第一人称视角',
+    '単体作品': '个人作品', 'ベスト': '精选合集', '総集編': '总集篇',
+    'デビュー': '出道', '復帰': '复出', '新人': '新人', '専属': '专属演员',
+  }
+
+  // 先用词典翻译
+  for (let i = 0; i < tags.length; i++) {
+    if (TAG_DICT[tags[i]]) {
+      tags[i] = TAG_DICT[tags[i]]
+    }
+  }
+
+  // 剩余日文标签用 AI 翻译
   const hasKey = !!getApiKey()
   const untranslated = tags.filter(t => /[぀-ゟ゠-ヿ]/.test(t))
   if (untranslated.length > 0 && hasKey) {

@@ -91,11 +91,17 @@ export default function App() {
         >
           <div className="sidebar-logo">
             {sidebarCollapsed ? (
-              <div className="sidebar-logo-icon">喰</div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                <div className="sidebar-logo-icon">喰</div>
+                <img src={new URL('./assets/icon.png', import.meta.url).href} alt="" style={{ width: 40, height: 40, borderRadius: 10 }} />
+              </div>
             ) : (
-              <div>
-                <div className="sidebar-logo-text">喰导</div>
-                <div className="sidebar-logo-sub">CANDAO</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div>
+                  <div className="sidebar-logo-text">喰导</div>
+                  <div className="sidebar-logo-sub">CANDAO</div>
+                </div>
+                <img src={new URL('./assets/icon.png', import.meta.url).href} alt="" style={{ width: 48, height: 48, borderRadius: 12 }} />
               </div>
             )}
           </div>

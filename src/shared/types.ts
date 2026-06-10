@@ -62,6 +62,10 @@ export interface CrawlResult {
   actors: string[]
   director: string | null
   maker: string | null
+  series?: string | null
+  label?: string | null
+  video_type?: string | null
+  product_code?: string | null
   tags: string[]
   rating: number | null
   description: string | null
