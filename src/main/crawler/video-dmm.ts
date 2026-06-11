@@ -65,111 +65,84 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
             return
           }
 
-          // 等待 React 渲染（Next.js 需要更长时间）
+          // 等待页面渲染
           await new Promise(r => setTimeout(r, 5000))
 
-          // 提取页面数据
+          // 从 JSON-LD 结构化数据提取元数据
           const data = await win.webContents.executeJavaScript(`
-            // 调试信息
-            const debug = {
-              url: window.location.href,
-              title: document.title,
-              bodyLength: document.body.innerHTML.length,
-              h1Count: document.querySelectorAll('h1').length,
-              imgCount: document.querySelectorAll('img').length
-            };
-            console.log('[video.dmm] 页面信息:', JSON.stringify(debug));
+            // 提取 JSON-LD 数据
+            const jsonLdScripts = document.querySelectorAll('script[type="application/ld+json"]');
+            let product = null;
+            let breadcrumb = null;
 
-            // 标题（多选择器兼容）
-            const title = document.querySelector('h1')?.textContent?.trim() ||
-                          document.querySelector('[class*="title"]')?.textContent?.trim() ||
-                          document.querySelector('[data-testid="title"]')?.textContent?.trim() ||
-                          document.querySelector('meta[property="og:title"]')?.content ||
-                          document.title || '';
-
-            // 封面图
-            const coverImg = document.querySelector('img[src*="pics.dmm.co.jp"]')?.src ||
-                            document.querySelector('img[src*="awsimgsrc"]')?.src ||
-                            document.querySelector('meta[property="og:image"]')?.content || '';
-
-            // 简介
-            const desc = document.querySelector('[class*="description"], [class*="summary"], [class*="intro"], p[class*="text"]')?.textContent?.trim() || '';
-
-            // 标签
-            const tags = [];
-            document.querySelectorAll('a[href*="genre"], a[href*="keyword"], [class*="genre"] a, [class*="tag"] a').forEach(el => {
-              const t = el.textContent?.trim();
-              if (t && t.length < 30 && !tags.includes(t)) tags.push(t);
+            jsonLdScripts.forEach(script => {
+              try {
+                const json = JSON.parse(script.textContent);
+                if (json['@type'] === 'Product') product = json;
+                if (json['@type'] === 'BreadcrumbList') breadcrumb = json;
+              } catch(e) {}
             });
 
-            // 演员
-            const actors = [];
-            document.querySelectorAll('a[href*="actress"], a[href*="idol"], [class*="actress"] a, [class*="idol"] a').forEach(el => {
-              const name = el.textContent?.trim();
-              if (name && name.length < 20 && !actors.includes(name)) actors.push(name);
-            });
+            // 从面包屑提取 maker 和 label
+            let maker = '';
+            let label = '';
+            if (breadcrumb && breadcrumb.itemListElement) {
+              breadcrumb.itemListElement.forEach(item => {
+                if (item.position === 3 && item.name) maker = item.name;
+                if (item.position === 4 && item.name) label = item.name;
+              });
+            }
 
-            // 元数据
-            const meta = {};
-            document.querySelectorAll('dt, th').forEach(el => {
-              const label = el.textContent?.trim();
-              const value = el.nextElementSibling?.textContent?.trim();
-              if (label && value) meta[label] = value;
-            });
-
-            // 发行日期
-            const releaseDate = meta['発売日'] || meta['配信開始日'] || meta['Release'] || '';
-
-            // 时长
-            const durationText = meta['収録時間'] || meta['Runtime'] || '';
-            const durationMatch = durationText.match(/(\\d+)/);
-            const duration = durationMatch ? parseInt(durationMatch[1]) * 60 : null;
-
-            // 制造商
-            const maker = meta['メーカー'] || meta['Studio'] || '';
-
-            // 系列
-            const series = meta['シリーズ'] || meta['Series'] || '';
-
-            // 唱片公司
-            const label = meta['レーベル'] || meta['Label'] || '';
-
-            // 产品编号
-            const productCode = meta['品番'] || meta['商品番号'] || '';
-
-            // 样例图
-            const sampleImages = [];
-            document.querySelectorAll('img[src*="pics.dmm.co.jp"]').forEach(el => {
-              const src = el.src;
-              if (src && !src.includes('dummy') && !src.includes('loading') && !sampleImages.includes(src)) {
-                sampleImages.push(src);
-              }
-            });
-
-            ({
-              title,
-              coverUrl: coverImg,
-              description: desc,
-              tags,
-              actors,
-              releaseDate,
-              duration,
-              maker,
-              series,
-              label,
-              productCode,
-              sampleImages,
-              debug
-            });
+            // 从 JSON-LD Product 提取数据
+            if (product) {
+              const videoObj = product.subjectOf || {};
+              ({
+                title: product.name || '',
+                description: product.description || '',
+                coverUrl: (product.image && product.image[0]) || '',
+                sampleImages: (product.image || []).filter(img => img.includes('jp-')),
+                actors: (videoObj.actor || []).map(a => a.name || a.alternateName || ''),
+                tags: videoObj.genre || [],
+                releaseDate: videoObj.uploadDate || '',
+                duration: null,
+                maker: maker,
+                series: '',
+                label: label,
+                productCode: product.sku || '',
+                review: product.aggregateRating || {}
+              });
+            } else {
+              // 兜底：从 og:meta 提取
+              ({
+                title: document.querySelector('meta[property="og:title"]')?.content || document.title || '',
+                description: document.querySelector('meta[property="og:description"]')?.content || '',
+                coverUrl: document.querySelector('meta[property="og:image"]')?.content || '',
+                sampleImages: [],
+                actors: [],
+                tags: [],
+                releaseDate: '',
+                duration: null,
+                maker: maker,
+                series: '',
+                label: label,
+                productCode: '',
+                review: {}
+              });
+            }
           `)
 
           win.destroy()
 
           if (!data.title) {
-            console.log('[video.dmm] 提取失败，页面内容:', data.debug)
+            console.log('[video.dmm] 提取失败')
             reject(new Error('video.dmm.co.jp 未找到标题'))
             return
           }
+
+          console.log('[video.dmm] 提取成功:', data.title)
+          console.log('[video.dmm] 封面:', data.coverUrl?.substring(0, 80))
+          console.log('[video.dmm] 演员:', data.actors?.join(', '))
+          console.log('[video.dmm] 标签:', data.tags?.join(', '))
 
           resolve({
             title: data.title,
@@ -185,7 +158,7 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
             video_type: null,
             product_code: data.productCode || null,
             tags: data.tags || [],
-            rating: null,
+            rating: data.review?.average || null,
             description: data.description || null,
             fanza_url: url,
             source: 'FANZA'
