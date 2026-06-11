@@ -185,7 +185,9 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
             const productCode = productCodeRaw || '';
 
             const genreRaw = getCellText('ジャンル：') || getCellText('関連タグ：') || '';
-            const tags = genreRaw.split(/\s+/).filter(t => t.length > 0 && !t.includes('#'));
+            const htmlTags = genreRaw.split(/\s+/).filter(t => t.length > 0 && !t.includes('#'));
+            // 优先使用 JSON-LD genre（有分隔符），HTML ジャンル 无分隔符
+            const tags = (v && v.genre && v.genre.length > 0) ? v.genre : htmlTags;
 
             ({
               title,
