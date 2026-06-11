@@ -1,6 +1,70 @@
 import { BrowserWindow } from 'electron'
 import type { CrawlResult, ProxyConfig } from '../../shared/types'
 
+// 从 fanza.ts 复用标签词典
+const TAG_DICT: Record<string, string> = {
+  '新人': '新人', '専属': '专属演员', '単体作品': '个人作品', 'デビュー': '出道',
+  '復帰': '复出', '初出演': '首次出演', '初撮り': '首次拍摄', '初体験': '初次体验',
+  '初公開': '首次公开', '人気': '人气作品', '話題作': '热门作品', 'ベスト': '精选合集',
+  '総集編': '总集篇', '完全版': '完整版', '未公開': '未公开内容', '特典映像': '特典影像',
+  'メイキング': '幕后花絮',
+  '人妻': '已婚女性', '若妻': '年轻妻子', '美人妻': '美人妻', '奥様': '太太',
+  '未亡人': '寡妇', '女教師': '女教师', '女医': '女医生', '看護師': '护士',
+  'OL': '白领女性', '秘書': '秘书', '店員': '店员', 'メイド': '女仆',
+  '家政婦': '家政人员', '学生風': '学生风格', 'ギャル': '辣妹', '清楚系': '清纯系',
+  'お嬢様': '大小姐', 'アイドル': '偶像', 'コスプレイヤー': 'Cosplayer',
+  '美少女': '美少女', '美人': '美女', '可愛い': '可爱', '色白': '白皙肌肤',
+  '黒髪': '黑发', 'ロングヘア': '长发', 'ショートヘア': '短发', 'スレンダー': '苗条',
+  'グラマー': '丰满', '巨乳': '丰满身材', '微乳': '小巧身材', '美脚': '美腿',
+  '美尻': '美臀', 'モデル体型': '模特身材', '童顔': '娃娃脸',
+  '恥ずかしがる': '害羞', '照れる': '羞涩', '積極的': '主动', '大胆': '大胆',
+  '甘える': '撒娇', '誘う': '引诱', '無邪気': '天真', '笑顔': '笑容满面',
+  '泣き顔': '哭泣表情', '驚く': '惊讶', '興奮': '兴奋', '陶酔': '沉醉',
+  '悶える': '沉浸快感', '恍惚': '恍惚',
+  '恋人設定': '恋人设定', '同棲': '同居', '新婚': '新婚生活', '出張': '出差',
+  '温泉旅行': '温泉旅行', '家庭教師': '家教设定', 'オフィス': '办公室',
+  '部活': '社团活动', '学園': '校园题材', '面接': '面试', '研修': '培训',
+  '出会い': '邂逅', '再会': '重逢', '秘密': '秘密关系', '浮気': '出轨题材',
+  '不倫': '婚外情题材',
+  'ハイビジョン': '高清', 'フルHD': '全高清', '4K': '4K画质', 'VR': 'VR影片',
+  '主観': '第一人称视角', 'POV': '第一视角', 'ドキュメント': '纪录风格',
+  '隠し撮り風': '偷拍风格', '密着': '贴身跟拍', '長尺': '长篇内容',
+  '完全収録': '完整收录', 'ダイジェスト': '精华版', 'オムニバス': '合集',
+  'パイパン': '白虎', '長身': '高个', '短身': '矮个', '眼鏡': '眼镜', 'ロリ': '萝莉',
+  'お姉さん': '姐姐', '熟女': '熟女', '女子校生': '女学生', 'ボーイッシュ': '中性',
+  '中出し': '中出', '生ハメ': '无套', '潮吹き': '潮吹', '顔射': '颜射',
+  'ぶっかけ': '颜射', 'ごっくん': '吞精', '飲精': '吞精', 'アナル': '肛交',
+  '浣腸': '灌肠', 'フィスト': '拳交', 'イラマチオ': '深喉', '足コキ': '足交',
+  '脚フェチ': '恋足', 'オナニー': '自慰', '電マ': '按摩棒', 'バイブ': '震动棒',
+  'おもちゃ': '玩具', '飲尿': '饮尿', '放尿': '放尿', '脱糞': '排便',
+  'ナンパ': '搭讪', 'ハメ撮り': '自拍', '盗撮': '偷拍', '露出': '露出',
+  '野外': '户外', '羞恥': '羞耻', 'パンチラ': '走光', 'ソープ': '泡泡浴',
+  'エステ': '美容', 'マッサージ': '按摩', '風俗': '风俗', '温泉': '温泉',
+  '調教': '调教', '緊縛': '捆绑', '拘束': '束缚', '逆レイプ': '逆强奸',
+  'レイプ': '强奸', 'SM': 'SM',
+  'カップル': '情侣', '親子': '亲子', '嫁': '媳妇', '義母': '继母',
+  '義姉': '继姐', '義妹': '继妹', '叔母': '阿姨', '近親': '近亲',
+  '本番': '真枪实弹', '淫乱': '淫乱', '痴女': '痴女',
+  '制服': '制服', 'セックス': '性爱', '3P': '3P', '乱交': '群交',
+  'レズ': '女同', 'Futanari': '扶她', 'Cosplay': 'Cosplay', 'アニメ': '动画',
+  'ベスト・総集編': '精选合集', '4時間以上': '4小时以上',
+  '4時間以上作品': '4小时以上作品',
+  'アウトレット': '特价清仓', 'セール': '促销', '限定': '限定', '独占': '独占',
+  '配信': '在线', '新作': '新作', 'ランキング': '排行',
+  'おすすめ': '推荐', '注目': '关注', '話題': '话题',
+  'イメージビデオ': '写真视频', 'コンドーム': '避孕套', '妊娠': '怀孕', '汗だく': '满身大汗', 'デジモ': '数码马赛克',
+  '女優': '女优', '男優': '男优', '引退': '退役', '復活': '复出',
+  '動画': '视频', 'ヘルス': '保健', '全体': '全部', '素人': '素人',
+}
+
+const SKIP_TAGS = new Set(['サンプル動画', 'レビュー', '販売', 'レンタル', 'サンプル', 'アウトレット', 'セール', '限定'])
+
+function translateTagsSync(tags: string[]): string[] {
+  return tags
+    .filter(t => !SKIP_TAGS.has(t) && t.length > 0)
+    .map(t => TAG_DICT[t] || t)
+}
+
 // 用浏览器方式抓取 video.dmm.co.jp 页面
 export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<CrawlResult> {
   return new Promise((resolve, reject) => {
@@ -14,19 +78,16 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
       }
     })
 
-    // 设置代理和 Cookie（异步，需要等待完成）
+    // 设置代理和 Cookie
     const setupAndLoad = async () => {
       const sess = win.webContents.session
 
-      // 设置代理
       if (proxy?.enabled) {
         await sess.setProxy({
           proxyRules: `${proxy.protocol}://${proxy.host}:${proxy.port}`
         })
-        console.log('[video.dmm] 代理已设置:', proxy)
       }
 
-      // 注入 FANZA 年龄验证 Cookie
       await sess.cookies.set({
         url: 'https://video.dmm.co.jp',
         name: 'age_check_done',
@@ -35,11 +96,6 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
         path: '/'
       })
 
-      // 验证 Cookie
-      const cookies = await sess.cookies.get({ domain: '.dmm.co.jp' })
-      console.log('[video.dmm] Cookie 已设置:', cookies.map(c => c.name).join(', '))
-
-      // 加载页面
       win.loadURL(url, {
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
       })
@@ -47,102 +103,115 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
 
     setupAndLoad()
 
-    // 等页面加载完
     win.webContents.on('did-finish-load', () => {
       setTimeout(async () => {
         try {
-          // 验证页面是否正常加载
+          // 验证页面
           const pageInfo = await win.webContents.executeJavaScript(`
             ({ title: document.title, url: window.location.href })
           `)
-          console.log('[video.dmm] 页面标题:', pageInfo.title)
-          console.log('[video.dmm] 页面 URL:', pageInfo.url)
 
           if (pageInfo.url.includes('age_check') || pageInfo.title.includes('年齢認証')) {
-            console.log('[video.dmm] ❌ 被年龄验证拦截！')
             win.destroy()
             reject(new Error('video.dmm.co.jp 年龄验证拦截'))
             return
           }
 
-          // 等待页面渲染
+          // 等待渲染
           await new Promise(r => setTimeout(r, 5000))
 
-          // 从 JSON-LD 结构化数据提取元数据
+          // 提取数据：JSON-LD + HTML 元数据表
           const data = await win.webContents.executeJavaScript(`
-            // 提取 JSON-LD 数据
+            // === JSON-LD 提取 ===
             const jsonLdScripts = document.querySelectorAll('script[type="application/ld+json"]');
             let product = null;
-            let breadcrumb = null;
-
             jsonLdScripts.forEach(script => {
               try {
                 const json = JSON.parse(script.textContent);
                 if (json['@type'] === 'Product') product = json;
-                if (json['@type'] === 'BreadcrumbList') breadcrumb = json;
               } catch(e) {}
             });
 
-            // 从面包屑提取 maker 和 label
-            let maker = '';
-            let label = '';
-            if (breadcrumb && breadcrumb.itemListElement) {
-              breadcrumb.itemListElement.forEach(item => {
-                if (item.position === 3 && item.name) maker = item.name;
-                if (item.position === 4 && item.name) label = item.name;
-              });
+            let title = '', description = '', coverUrl = '', sampleImages = [], actors = [], rating = null;
+            if (product) {
+              title = product.name || '';
+              description = product.description || '';
+              coverUrl = (product.image && product.image[0]) || '';
+              sampleImages = (product.image || []).filter(img => img.includes('jp-'));
+              actors = (product.subjectOf?.actor || []).map(a => a.name || '');
+              rating = product.aggregateRating?.ratingValue || null;
             }
 
-            // 从 JSON-LD Product 提取数据
-            if (product) {
-              const videoObj = product.subjectOf || {};
-              ({
-                title: product.name || '',
-                description: product.description || '',
-                coverUrl: (product.image && product.image[0]) || '',
-                sampleImages: (product.image || []).filter(img => img.includes('jp-')),
-                actors: (videoObj.actor || []).map(a => a.name || a.alternateName || ''),
-                tags: videoObj.genre || [],
-                releaseDate: videoObj.uploadDate || '',
-                duration: null,
-                maker: maker,
-                series: '',
-                label: label,
-                productCode: product.sku || '',
-                review: product.aggregateRating || {}
-              });
-            } else {
-              // 兜底：从 og:meta 提取
-              ({
-                title: document.querySelector('meta[property="og:title"]')?.content || document.title || '',
-                description: document.querySelector('meta[property="og:description"]')?.content || '',
-                coverUrl: document.querySelector('meta[property="og:image"]')?.content || '',
-                sampleImages: [],
-                actors: [],
-                tags: [],
-                releaseDate: '',
-                duration: null,
-                maker: maker,
-                series: '',
-                label: label,
-                productCode: '',
-                review: {}
-              });
-            }
+            // === HTML 元数据表提取（原版 FANZA 逻辑）===
+            const getCellText = (label) => {
+              const cells = document.querySelectorAll('td');
+              for (const cell of cells) {
+                if (cell.textContent.trim() === label) {
+                  const next = cell.nextElementSibling;
+                  return next ? next.textContent.trim() : '';
+                }
+              }
+              return '';
+            };
+
+            const releaseDateRaw = getCellText('発売日：') || getCellText('配信開始日：');
+            const releaseDateMatch = releaseDateRaw.match(/(\\d{4}\\/\\d{2}\\/\\d{2})/);
+            const releaseDate = releaseDateMatch ? releaseDateMatch[1].replace(/\\//g, '-') : '';
+
+            const durationRaw = getCellText('収録時間：');
+            const durationMatch = durationRaw.match(/(\\d+)/);
+            const duration = durationMatch ? parseInt(durationMatch[1]) * 60 : null;
+
+            const directorRaw = getCellText('監督：');
+            const director = (directorRaw && directorRaw !== '----') ? directorRaw : '';
+
+            const makerRaw = getCellText('メーカー：') || '';
+            const maker = makerRaw || '';
+
+            const seriesRaw = getCellText('シリーズ：') || '';
+            const series = (seriesRaw && seriesRaw !== '----' && seriesRaw !== 'なし') ? seriesRaw : '';
+
+            const labelRaw = getCellText('レーベル：') || '';
+            const label = (labelRaw && labelRaw !== '----') ? labelRaw : '';
+
+            const productCodeRaw = getCellText('品番：') || getCellText('商品番号：') || '';
+            const productCode = productCodeRaw || '';
+
+            const genreRaw = getCellText('ジャンル：') || '';
+            const tags = genreRaw.split(/\\s+/).filter(t => t.length > 0 && !t.includes('#'));
+
+            ({
+              title,
+              description,
+              coverUrl,
+              sampleImages,
+              actors,
+              tags,
+              releaseDate,
+              duration,
+              director,
+              maker,
+              series,
+              label,
+              productCode,
+              rating
+            });
           `)
 
           win.destroy()
 
           if (!data.title) {
-            console.log('[video.dmm] 提取失败')
             reject(new Error('video.dmm.co.jp 未找到标题'))
             return
           }
 
+          // 标签翻译（词典 + AI）
+          let translatedTags = translateTagsSync(data.tags || [])
+
           console.log('[video.dmm] 提取成功:', data.title)
           console.log('[video.dmm] 封面:', data.coverUrl?.substring(0, 80))
           console.log('[video.dmm] 演员:', data.actors?.join(', '))
-          console.log('[video.dmm] 标签:', data.tags?.join(', '))
+          console.log('[video.dmm] 标签:', translatedTags.join(', '))
 
           resolve({
             title: data.title,
@@ -151,17 +220,17 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
             release_date: data.releaseDate || null,
             duration: data.duration || null,
             actors: data.actors || [],
-            director: null,
+            director: data.director || null,
             maker: data.maker || null,
             series: data.series || null,
             label: data.label || null,
             video_type: null,
             product_code: data.productCode || null,
-            tags: data.tags || [],
-            rating: data.review?.average || null,
+            tags: translatedTags,
+            rating: data.rating || null,
             description: data.description || null,
             fanza_url: url,
-            source: 'FANZA'
+            source: 'video.dmm'
           })
         } catch (e: any) {
           win.destroy()
@@ -170,7 +239,6 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
       }, 3000)
     })
 
-    // 错误处理
     win.webContents.on('did-fail-load', (_, errorCode, errorDescription) => {
       if (!win.isDestroyed()) {
         win.destroy()
@@ -178,7 +246,6 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
       }
     })
 
-    // 超时处理
     setTimeout(() => {
       if (!win.isDestroyed()) {
         win.destroy()
