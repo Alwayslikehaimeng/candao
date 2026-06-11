@@ -107,6 +107,10 @@ export function getVideo(id: number): Video | null {
   }
 }
 
+export function getVideoByCode(code: string): Video | null {
+  return queryOne('SELECT * FROM videos WHERE code = ?', [code]) as Video | null
+}
+
 export function getCategoryCounts(): Record<string, number> {
   const rows = queryAll(`SELECT category, COUNT(*) as count FROM videos GROUP BY category`) as { category: string; count: number }[]
   const result: Record<string, number> = { av: 0, fc2: 0, other: 0 }

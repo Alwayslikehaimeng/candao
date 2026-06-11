@@ -8,13 +8,16 @@ import {
   getRandomVideo,
   addSampleImages,
   getTagsWithCount,
-  getCategoryCounts
+  getCategoryCounts,
+  getVideoByCode
 } from '../database/video'
 import { scanFolder, parseCode } from '../scanner/scanner'
 import { probeVideo } from '../ffprobe/probe'
 import { fetchFanza } from '../crawler/fanza'
 import { fetchFc2 } from '../crawler/fc2'
 import { fetchJavbus } from '../crawler/javbus'
+import { fetchVideoDmm } from '../crawler/video-dmm'
+import { searchVideoDmmId } from '../crawler/video-dmm-search'
 import { downloadImage } from '../utils/download'
 import { getCoversDir, getSetting, setSetting } from '../database/schema'
 import { setApiKey, setApiBase, getApiKey, setModel } from '../utils/ai-translate'
@@ -58,21 +61,60 @@ export function registerIpcHandlers(): void {
     return getCategoryCounts()
   })
 
-  // 爬虫（FANZA 优先，失败则尝试 JavBus）
+  // 爬虫（FANZA → video.dmm GraphQL → JavBus）
   ipcMain.handle('crawler:fetchAv', async (_, code: string) => {
-    // 先尝试 FANZA
+    const proxy = proxyConfig.enabled ? proxyConfig : undefined
+
+    // 先尝试 FANZA（cheerio）
     try {
-      const result = await fetchFanza(code, proxyConfig.enabled ? proxyConfig : undefined)
+      const result = await fetchFanza(code, proxy)
       return { success: true, data: result }
     } catch (fanzaError: any) {
-      console.log('[抓取] FANZA 失败:', fanzaError.message, '→ 尝试 JavBus')
-      // FANZA 失败，尝试 JavBus
-      try {
-        const result = await fetchJavbus(code, proxyConfig.enabled ? proxyConfig : undefined)
-        return { success: true, data: result }
-      } catch (javbusError: any) {
-        return { success: false, error: `FANZA: ${fanzaError.message} | JavBus: ${javbusError.message}` }
+      console.log('[抓取] FANZA 失败:', fanzaError.message)
+    }
+
+    // FANZA 失败，尝试 video.dmm GraphQL 搜索
+    try {
+      console.log('[抓取] 尝试 video.dmm GraphQL 搜索:', code)
+
+      // 检查数据库中是否已有缓存的 video_dmm_id
+      const existingVideo = await getVideoByCode(code)
+      let videoDmmId = existingVideo?.video_dmm_id || null
+
+      if (videoDmmId) {
+        console.log('[抓取] 使用缓存的 video_dmm_id:', videoDmmId)
+      } else {
+        // 全量分页搜索
+        videoDmmId = await searchVideoDmmId(code, proxy)
+        if (videoDmmId) {
+          console.log('[抓取] 搜索到 video_dmm_id:', videoDmmId)
+          // 保存到数据库
+          if (existingVideo) {
+            await updateVideo(existingVideo.id, { video_dmm_id: videoDmmId })
+            console.log('[抓取] 已缓存 video_dmm_id 到数据库')
+          }
+        }
       }
+
+      if (!videoDmmId) {
+        throw new Error('video.dmm 未找到匹配结果')
+      }
+
+      // 用完整 ID 构造详情页 URL
+      const detailUrl = `https://video.dmm.co.jp/av/content/?id=${videoDmmId}`
+      console.log('[抓取] 详情页:', detailUrl)
+      const result = await fetchVideoDmm(detailUrl, proxy)
+      return { success: true, data: result }
+    } catch (videoDmmError: any) {
+      console.log('[抓取] video.dmm 失败:', videoDmmError.message)
+    }
+
+    // 都失败，尝试 JavBus
+    try {
+      const result = await fetchJavbus(code, proxy)
+      return { success: true, data: result }
+    } catch (javbusError: any) {
+      return { success: false, error: `FANZA + video.dmm + JavBus 均失败` }
     }
   })
 

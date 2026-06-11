@@ -221,20 +221,24 @@ export async function fetchFanza(code: string, userProxy?: ProxyConfig): Promise
   // 系列
   const seriesRaw = getCellText('シリーズ：') || getCellText('series：')
   const series = (seriesRaw && seriesRaw !== '----' && seriesRaw !== 'なし') ? seriesRaw : null
+  console.log('[FANZA] 系列:', seriesRaw, '→', series)
 
   // 唱片公司
   const labelRaw = getCellText('レーベル：')
   const label = (labelRaw && labelRaw !== '----') ? labelRaw : null
+  console.log('[FANZA] 唱片公司:', labelRaw, '→', label)
 
   // 类型
   const videoTypeRaw = getCellText('ジャンル：') || getCellText('形式：')
   const videoType = (videoTypeRaw && videoTypeRaw !== '----') ? videoTypeRaw.split(/\s+/)[0] : null
+  console.log('[FANZA] 类型:', videoTypeRaw, '→', videoType)
 
   // 产品编号
   const productCodeRaw = getCellText('品番：') || getCellText('商品番号：')
   const productCode = (productCodeRaw && productCodeRaw !== '----')
     ? productCodeRaw.replace(/^[0-9]+/, '').trim() || productCodeRaw.trim()
     : null
+  console.log('[FANZA] 产品编号:', productCodeRaw, '→', productCode)
 
   // 演员
   const actors: string[] = []
