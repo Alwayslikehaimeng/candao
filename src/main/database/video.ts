@@ -271,7 +271,11 @@ export function deleteVideo(id: number): void {
 }
 
 export function getRandomVideo(): Video | null {
-  const video = queryOne('SELECT * FROM videos ORDER BY RANDOM() LIMIT 1') as Video | undefined
+  // 先获取总数，再随机选偏移量（比 ORDER BY RANDOM 更均匀）
+  const countResult = queryOne('SELECT COUNT(*) as cnt FROM videos') as { cnt: number } | undefined
+  if (!countResult || countResult.cnt === 0) return null
+  const offset = Math.floor(Math.random() * countResult.cnt)
+  const video = queryOne('SELECT * FROM videos LIMIT 1 OFFSET ?', [offset]) as Video | undefined
   if (!video) return null
   return {
     ...video,

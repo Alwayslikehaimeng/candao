@@ -1,4 +1,6 @@
 import { BrowserWindow } from 'electron'
+import { translateToChinese } from '../utils/translate'
+import { aiTranslate, aiTranslateTags, getApiKey } from '../utils/ai-translate'
 import type { CrawlResult, ProxyConfig } from '../../shared/types'
 
 // 从 fanza.ts 复用标签词典
@@ -132,13 +134,14 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
               } catch(e) {}
             });
 
-            let title = '', description = '', coverUrl = '', sampleImages = [], actors = [], rating = null, ratingCount = null;
+            let title = '', description = '', coverUrl = '', sampleImages = [], actors = [], maker = '', rating = null, ratingCount = null;
             if (product) {
               title = product.name || '';
               description = product.description || '';
               coverUrl = (product.image && product.image[0]) || '';
               sampleImages = (product.image || []).filter(img => img.includes('jp-'));
               actors = (product.subjectOf?.actor || []).map(a => a.name || '');
+              maker = product.brand?.name || '';
               rating = product.aggregateRating?.ratingValue || null;
               ratingCount = product.aggregateRating?.ratingCount || null;
             }
@@ -162,7 +165,7 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
               return '';
             };
 
-            const releaseDateRaw = getCellText('発売日：') || getCellText('配信開始日：');
+            const releaseDateRaw = getCellText('発売日：') || getCellText('配信開始日：') || getCellText('商品発売日：');
             const releaseDateMatch = releaseDateRaw.match(/(\\d{4}\\/\\d{2}\\/\\d{2})/);
             const releaseDate = releaseDateMatch ? releaseDateMatch[1].replace(/\\//g, '-') : '';
 
@@ -173,8 +176,11 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
             const directorRaw = getCellText('監督：');
             const director = (directorRaw && directorRaw !== '----') ? directorRaw : '';
 
-            const makerRaw = getCellText('メーカー：') || '';
-            const maker = makerRaw || '';
+            // 优先用 JSON-LD 的 maker，th 作为备用
+            if (!maker) {
+              const makerRaw = getCellText('メーカー：') || '';
+              maker = makerRaw || '';
+            }
 
             const seriesRaw = getCellText('シリーズ：') || '';
             const series = (seriesRaw && seriesRaw !== '----' && seriesRaw !== 'なし') ? seriesRaw : '';
@@ -185,10 +191,33 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
             const productCodeRaw = getCellText('メーカー品番：') || getCellText('品番：') || getCellText('作品番号：') || getCellText('配信品番：') || '';
             const productCode = productCodeRaw || '';
 
-            const genreRaw = getCellText('ジャンル：') || getCellText('関連タグ：') || '';
-            const htmlTags = genreRaw.split(/\s+/).filter(t => t.length > 0 && !t.includes('#'));
-            // 优先使用 JSON-LD genre（有分隔符），HTML ジャンル 无分隔符
-            const tags = (v && v.genre && v.genre.length > 0) ? v.genre : htmlTags;
+            // 演员：JSON-LD 优先，th 备用
+            if (actors.length === 0) {
+              const actorRaw = getCellText('出演者：') || '';
+              if (actorRaw && actorRaw !== '----') {
+                actors = actorRaw.split(/[,、]/).map(a => a.trim()).filter(a => a.length > 0 && a.length < 25);
+              }
+            }
+
+            // 标签提取：优先 a[href*="genre"] 链接，其次 JSON-LD，最后 th
+            let tags = [];
+            // 方法1：从 genre 链接提取（最准确，每个标签独立）
+            const genreLinks = document.querySelectorAll('a[href*="genre"]');
+            genreLinks.forEach(a => {
+              const tag = a.textContent.trim();
+              if (tag && tag.length > 1 && tag !== 'ジャンル一覧へ' && !tags.includes(tag)) {
+                tags.push(tag);
+              }
+            });
+            // 方法2：JSON-LD genre 数组
+            if (tags.length === 0 && product && product.genre && product.genre.length > 0) {
+              tags = product.genre;
+            }
+            // 方法3：th 元素（连在一起，无法分割，作为最后手段）
+            if (tags.length === 0) {
+              const genreRaw = getCellText('ジャンル：') || getCellText('関連タグ：') || '';
+              tags = genreRaw.split(/\\s+/).filter(t => t.length > 0 && !t.includes('#'));
+            }
 
             ({
               title,
@@ -218,14 +247,45 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
 
           // 标签翻译（词典 + AI）
           let translatedTags = translateTagsSync(data.tags || [])
+          const hasKey = !!getApiKey()
+          const untranslated = translatedTags.filter(t => /[぀-ゟ゠-ヿ]/.test(t))
+          if (untranslated.length > 0 && hasKey) {
+            console.log('[video.dmm] AI翻译标签:', untranslated)
+            const aiTranslated = await aiTranslateTags(untranslated)
+            const untranslatedSet = new Set(untranslated)
+            let aiIndex = 0
+            translatedTags = translatedTags.map(t => {
+              if (untranslatedSet.has(t)) return aiTranslated[aiIndex++] || t
+              return t
+            })
+          }
 
-          console.log('[video.dmm] 提取成功:', data.title)
-          console.log('[video.dmm] 封面:', data.coverUrl?.substring(0, 80))
-          console.log('[video.dmm] 演员:', data.actors?.join(', '))
-          console.log('[video.dmm] 标签:', translatedTags.join(', '))
+          // 标题翻译
+          let translatedTitle = data.title
+          if (hasKey) {
+            const aiTitle = await aiTranslate(data.title, 'title')
+            if (aiTitle && aiTitle !== data.title) translatedTitle = aiTitle
+            else translatedTitle = await translateToChinese(data.title) || data.title
+          } else {
+            translatedTitle = await translateToChinese(data.title) || data.title
+          }
+
+          // 简介翻译
+          let translatedDesc = data.description || ''
+          if (translatedDesc) {
+            if (hasKey) {
+              const aiDesc = await aiTranslate(translatedDesc, 'description')
+              if (aiDesc && aiDesc !== translatedDesc) translatedDesc = aiDesc
+              else translatedDesc = await translateToChinese(translatedDesc) || translatedDesc
+            } else {
+              translatedDesc = await translateToChinese(translatedDesc) || translatedDesc
+            }
+          }
+
+          console.log('[video.dmm] 提取成功:', translatedTitle)
 
           resolve({
-            title: data.title,
+            title: translatedTitle,
             cover_url: data.coverUrl || '',
             sample_image_urls: data.sampleImages || [],
             release_date: data.releaseDate || null,
@@ -240,7 +300,7 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
             tags: translatedTags,
             rating: data.rating || null,
             ratingCount: data.ratingCount || null,
-            description: data.description || null,
+            description: translatedDesc || null,
             fanza_url: url,
             source: 'video.dmm'
           })

@@ -19,6 +19,14 @@ const api = {
     ipcRenderer.invoke('crawler:fetchAv', code),
   fetchFc2: (code: string): Promise<{ success: boolean; data?: CrawlResult; error?: string }> =>
     ipcRenderer.invoke('crawler:fetchFc2', code),
+  fetchJavbus: (code: string): Promise<{ success: boolean; data?: CrawlResult; error?: string }> =>
+    ipcRenderer.invoke('crawler:fetchJavbus', code),
+  fetchFromUrl: (url: string): Promise<{ success: boolean; data?: CrawlResult; error?: string }> =>
+    ipcRenderer.invoke('crawler:fetchFromUrl', url),
+  uploadImage: (videoId: number, filePath: string): Promise<{ success: boolean; path?: string; error?: string }> =>
+    ipcRenderer.invoke('crawler:uploadImage', videoId, filePath),
+  deleteSampleImage: (videoId: number, localPath: string): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('crawler:deleteSampleImage', videoId, localPath),
   downloadImages: (
     videoId: number,
     coverUrl: string,

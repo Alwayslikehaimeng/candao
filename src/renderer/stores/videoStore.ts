@@ -14,12 +14,17 @@ export const useVideoStore = create<VideoStore>((set, get) => ({
   videos: [],
   loading: false,
   filters: {
-    sortBy: 'created_at',
-    sortOrder: 'desc'
+    sortBy: (localStorage.getItem('sortBy') as any) || 'created_at',
+    sortOrder: (localStorage.getItem('sortOrder') as any) || 'desc'
   },
 
   setFilters: (newFilters) =>
-    set((state) => ({ filters: { ...state.filters, ...newFilters } })),
+    set((state) => {
+      const filters = { ...state.filters, ...newFilters }
+      if (newFilters.sortBy) localStorage.setItem('sortBy', newFilters.sortBy)
+      if (newFilters.sortOrder) localStorage.setItem('sortOrder', newFilters.sortOrder)
+      return { filters }
+    }),
   refreshVideos: async () => {
     set({ loading: true })
     try {

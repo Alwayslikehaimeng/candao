@@ -820,13 +820,12 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, transparent 50%);
+  background: rgba(0, 0, 0, 0.3);
   opacity: 0;
   transition: opacity 0.25s ease;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  padding-bottom: 16px;
 }
 
 .video-card:hover .video-card-poster-overlay {
@@ -1121,6 +1120,46 @@ body {
   object-fit: cover;
 }
 
+.detail-thumb-upload {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: var(--candao-text-muted);
+  background: var(--candao-bg);
+  border: 2px dashed var(--candao-border);
+  cursor: pointer;
+}
+.detail-thumb-upload:hover {
+  border-color: var(--candao-pink);
+  color: var(--candao-pink);
+}
+
+.detail-thumb {
+  position: relative;
+}
+
+.detail-thumb-delete {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 0, 0, 0.7);
+  color: #fff;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.detail-thumb:hover .detail-thumb-delete {
+  opacity: 1;
+}
+
 /* 右侧信息区 */
 .detail-right {
   flex: 1;
@@ -1219,6 +1258,8 @@ body {
   font-size: 12px;
   font-weight: 500;
   color: var(--candao-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   margin-bottom: 8px;
 }
 
@@ -1841,6 +1882,27 @@ input[type="range"]::-webkit-slider-thumb {
   border-color: var(--candao-pink);
   color: var(--candao-pink);
   background: var(--candao-pink-bg);
+}
+
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sort-select {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--candao-border);
+  background: var(--candao-bg-card);
+  color: var(--candao-text);
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+}
+.sort-select:focus {
+  border-color: var(--candao-pink);
 }
 
 /* ===== 标签墙 ===== */

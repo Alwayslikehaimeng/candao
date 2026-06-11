@@ -62,37 +62,46 @@ export async function fetchJavbus(code: string, userProxy?: ProxyConfig): Promis
     coverUrl = `https://www.javbus.com${coverUrl}`
   }
 
+  // 从 div.info p 提取元数据（JavBus 的实际结构）
+  const infoText = $('div.info p').map((_, el) => $(el).text().trim()).get().join('\n')
+
   // 发行日期
   let releaseDate = ''
-  $('span.header:contains("發行日期"), span.header:contains("发行日期"), span.header:contains("Release")').each((_, el) => {
-    const text = $(el).next('span').text().trim() || $(el).parent().text().trim()
-    const match = text.match(/(\d{4}[-/]\d{2}[-/]\d{2})/)
-    if (match) releaseDate = match[1].replace(/\//g, '-')
-  })
+  const dateMatch = infoText.match(/發行日期:\s*(\d{4}[-/]\d{2}[-/]\d{2})/) ||
+    infoText.match(/发行日期:\s*(\d{4}[-/]\d{2}[-/]\d{2})/) ||
+    infoText.match(/Release:\s*(\d{4}[-/]\d{2}[-/]\d{2})/)
+  if (dateMatch) releaseDate = dateMatch[1].replace(/\//g, '-')
 
   // 时长
   let duration: number | null = null
-  $('span.header:contains("長度"), span.header:contains("时长"), span.header:contains("Runtime")').each((_, el) => {
-    const text = $(el).next('span').text().trim() || $(el).parent().text().trim()
-    const match = text.match(/(\d+)/)
-    if (match) duration = parseInt(match[1]) * 60
-  })
+  const durationMatch = infoText.match(/長度:\s*(\d+)\s*分鐘/) ||
+    infoText.match(/时长:\s*(\d+)\s*分钟/) ||
+    infoText.match(/Runtime:\s*(\d+)/)
+  if (durationMatch) duration = parseInt(durationMatch[1]) * 60
 
-  // 导演
+  // 导演（从 a 标签提取）
   let director = ''
-  $('span.header:contains("導演"), span.header:contains("导演"), span.header:contains("Director")').each((_, el) => {
-    director = $(el).next('a').text().trim() || $(el).next('span').text().trim()
+  $('span.header:contains("導演"), span.header:contains("导演")').each((_, el) => {
+    director = $(el).next('a').text().trim() || $(el).parent().find('a').first().text().trim()
   })
+  if (!director) {
+    const dirMatch = infoText.match(/導演:\s*(.+?)(?:\n|$)/)
+    if (dirMatch) director = dirMatch[1].trim()
+  }
 
   // 制造商
   let maker = ''
-  $('span.header:contains("片商"), span.header:contains("制造商"), span.header:contains("Studio")').each((_, el) => {
-    maker = $(el).next('a').text().trim() || $(el).next('span').text().trim()
+  $('span.header:contains("製作商"), span.header:contains("制造商")').each((_, el) => {
+    maker = $(el).next('a').text().trim() || $(el).parent().find('a').first().text().trim()
   })
+  if (!maker) {
+    const makerMatch = infoText.match(/製作商:\s*(.+?)(?:\n|$)/)
+    if (makerMatch) maker = makerMatch[1].trim()
+  }
 
-  // 演员
+  // 演员（多选择器兼容）
   const actors: string[] = []
-  $('#star-list .star-name a, .star-name a, a[href*="star"]').each((_, el) => {
+  $('.star-name a').each((_, el) => {
     const name = $(el).text().trim()
     if (name && name.length < 20 && !actors.includes(name)) {
       actors.push(name)
@@ -102,7 +111,7 @@ export async function fetchJavbus(code: string, userProxy?: ProxyConfig): Promis
   // 标签（排除演员名）
   const tags: string[] = []
   const actorSet = new Set(actors)
-  $('span.genre a[href*="genre"], .genre a').each((_, el) => {
+  $('span.genre a, .genre a').each((_, el) => {
     const tag = $(el).text().trim()
     if (tag && !tags.includes(tag) && !actorSet.has(tag)) {
       tags.push(tag)
@@ -162,9 +171,9 @@ export async function fetchJavbus(code: string, userProxy?: ProxyConfig): Promis
 
   // 样例图
   const sampleImages: string[] = []
-  $('a.bigImage img, .screencap img, #sample-waterfall a img').each((_, el) => {
-    const src = $(el).attr('src') || ''
-    if (src && !sampleImages.includes(src)) {
+  $('#sample-waterfall a.sample-box, a.bigImage img').each((_, el) => {
+    const src = $(el).attr('src') || $(el).attr('href') || ''
+    if (src && src.includes('.jpg') && !sampleImages.includes(src)) {
       sampleImages.push(src.startsWith('http') ? src : `https://www.javbus.com${src}`)
     }
   })

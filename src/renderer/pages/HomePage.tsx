@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Spin, message, Modal } from 'antd'
-import { CheckSquareOutlined, DeleteOutlined } from '@ant-design/icons'
+import { CheckSquareOutlined, DeleteOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons'
 import { useVideoStore } from '../stores/videoStore'
 import VideoGrid from '../components/VideoGrid'
 import type { Video } from '../../shared/types'
@@ -67,6 +67,27 @@ export default function HomePage({ onViewDetail }: Props) {
           <span className="top-bar-count">{videos.length} 部</span>
         </div>
         <div className="top-bar-spacer" />
+        {/* 排序控件 */}
+        <div className="sort-controls">
+          <select
+            className="sort-select"
+            value={filters.sortBy || 'created_at'}
+            onChange={(e) => setFilters({ sortBy: e.target.value as any })}
+          >
+            <option value="created_at">添加时间</option>
+            <option value="title">名称</option>
+            <option value="release_date">上映时间</option>
+            <option value="duration">时长</option>
+            <option value="series">系列</option>
+          </select>
+          <button
+            className="top-bar-btn"
+            onClick={() => setFilters({ sortOrder: filters.sortOrder === 'asc' ? 'desc' : 'asc' })}
+            title={filters.sortOrder === 'asc' ? '当前：正序，点击切换倒序' : '当前：倒序，点击切换正序'}
+          >
+            {filters.sortOrder === 'asc' ? <SortAscendingOutlined /> : <SortDescendingOutlined />}
+          </button>
+        </div>
         <button
           className={`top-bar-btn ${batchMode ? 'active' : ''}`}
           onClick={() => { setBatchMode(!batchMode); setSelectedIds(new Set()) }}

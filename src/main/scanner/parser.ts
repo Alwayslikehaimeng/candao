@@ -27,5 +27,11 @@ export function parseCode(filename: string): string | null {
     return uncensoredMatch[0].replace(/[-_]/, '-').toUpperCase()
   }
 
+  // Caribbeancom 格式 (072015-925, 010217-340)
+  const caribMatch = name.match(/\d{6}[-_]\d{2,4}/)
+  if (caribMatch) {
+    return caribMatch[0].replace(/[-_]/, '-')
+  }
+
   return null
 }

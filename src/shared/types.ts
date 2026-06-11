@@ -75,7 +75,7 @@ export interface CrawlResult {
   description: string | null
   fanza_url?: string
   javbus_url?: string
-  source?: 'FANZA' | 'JavBus' | 'FC2'
+  source?: 'FANZA' | 'JavBus' | 'FC2' | 'Caribbeancom' | 'video.dmm'
 }
 
 // 文件扫描结果
@@ -112,6 +112,6 @@ export interface VideoFilters {
   maxRating?: number
   startDate?: string
   endDate?: string
-  sortBy?: 'created_at' | 'release_date' | 'rating'
+  sortBy?: 'created_at' | 'release_date' | 'rating' | 'title' | 'duration' | 'series'
   sortOrder?: 'asc' | 'desc'
 }

@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
-import { message, Rate } from 'antd'
-import { ArrowLeftOutlined, PlayCircleOutlined, SyncOutlined, DeleteOutlined, GlobalOutlined } from '@ant-design/icons'
+import { useEffect, useState, useRef } from 'react'
+import { message, Rate, Input } from 'antd'
+import { ArrowLeftOutlined, PlayCircleOutlined, SyncOutlined, DeleteOutlined, GlobalOutlined, LinkOutlined, SearchOutlined } from '@ant-design/icons'
 import StarRating from '../components/StarRating'
 import type { Video } from '../../shared/types'
 
@@ -35,6 +35,10 @@ export default function DetailPage({ videoId, onBack }: Props) {
   const [label, setLabel] = useState('')
   const [videoType, setVideoType] = useState('')
   const [productCode, setProductCode] = useState('')
+  const [showFallback, setShowFallback] = useState(false)
+  const [customUrl, setCustomUrl] = useState('')
+  const thumbBarRef = useRef<HTMLDivElement>(null)
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => { loadVideo() }, [videoId])
 
@@ -65,7 +69,11 @@ export default function DetailPage({ videoId, onBack }: Props) {
       setLabel(v.label || '')
       setVideoType(v.video_type || '')
       setProductCode(v.product_code || '')
-      if (v.cover_path) setPreviewImg(`file://${v.cover_path}`)
+      if (v.cover_path) {
+        setPreviewImg(`file://${v.cover_path}`)
+      } else if (v.sample_images && v.sample_images.length > 0) {
+        setPreviewImg(`file://${v.sample_images[0].local_path}`)
+      }
     } finally {
       setLoading(false)
     }
@@ -94,33 +102,115 @@ export default function DetailPage({ videoId, onBack }: Props) {
     finally { setSaving(false) }
   }
 
+  const applyResult = async (result: { success: boolean; data?: any; error?: string }) => {
+    if (result.success && result.data) {
+      const d = result.data
+      await window.api.updateVideo(videoId, {
+        title: d.title || video?.code, rating: d.rating || undefined,
+        release_date: d.release_date || undefined, duration: d.duration || undefined,
+        maker: d.maker || undefined, director: d.director || undefined,
+        description: d.description || undefined, fanza_url: d.fanza_url || undefined,
+        series: d.series || undefined, label: d.label || undefined,
+        video_type: d.video_type || undefined, product_code: d.product_code || undefined,
+        actors: d.actors, tags: d.tags, source: d.source || undefined
+      })
+      if (d.javbus_url) {
+        await window.api.updateVideo(videoId, { fanza_url: d.javbus_url })
+      }
+      if (d.cover_url) await window.api.downloadImages(videoId, d.cover_url, d.sample_image_urls)
+      await loadVideo()
+      setShowFallback(false)
+      message.success(`抓取成功（${d.source || '未知'}）`)
+      return true
+    } else {
+      message.error(result.error || '抓取失败')
+      return false
+    }
+  }
+
   const handleFetch = async () => {
     if (!video) return
     setFetching(true)
+    setShowFallback(false)
     try {
       const result = video.category === 'fc2'
         ? await window.api.fetchFc2(video.code)
         : await window.api.fetchAv(video.code)
-      if (result.success && result.data) {
-        const d = result.data
-        await window.api.updateVideo(videoId, {
-          title: d.title || video.code, rating: d.rating || undefined,
-          release_date: d.release_date || undefined, duration: d.duration || undefined,
-          maker: d.maker || undefined, director: d.director || undefined,
-          description: d.description || undefined, fanza_url: d.fanza_url || undefined,
-          series: d.series || undefined, label: d.label || undefined,
-          video_type: d.video_type || undefined, product_code: d.product_code || undefined,
-          actors: d.actors, tags: d.tags, source: d.source || undefined
-        })
-        if (d.javbus_url) {
-          await window.api.updateVideo(videoId, { fanza_url: d.javbus_url })
-        }
-        if (d.cover_url) await window.api.downloadImages(videoId, d.cover_url, d.sample_image_urls)
-        await loadVideo()
-        message.success(`抓取成功（${d.source || '未知'}）`)
-      } else { message.error(result.error || '抓取失败') }
-    } catch (e: any) { message.error('抓取失败: ' + e.message) }
+      if (!await applyResult(result)) {
+        setShowFallback(true)
+      }
+    } catch (e: any) { message.error('抓取失败: ' + e.message); setShowFallback(true) }
     finally { setFetching(false) }
+  }
+
+  const handleFetchJavbus = async () => {
+    if (!video) return
+    setFetching(true)
+    try {
+      const result = await window.api.fetchJavbus(video.code)
+      await applyResult(result)
+    } catch (e: any) { message.error('JavBus 抓取失败: ' + e.message) }
+    finally { setFetching(false) }
+  }
+
+  const handleFetchFromUrl = async () => {
+    if (!video || !customUrl.trim()) return
+    setFetching(true)
+    try {
+      const result = await window.api.fetchFromUrl(customUrl.trim())
+      await applyResult(result)
+    } catch (e: any) { message.error('URL 抓取失败: ' + e.message) }
+    finally { setFetching(false) }
+  }
+
+  // 封面滚轮翻页
+  const handleCoverWheel = (e: React.WheelEvent) => {
+    if (allImages.length <= 1) return
+    e.preventDefault()
+    const currentIndex = allImages.findIndex(i => i.src === previewImg)
+    const next = e.deltaY > 0
+      ? Math.min(currentIndex + 1, allImages.length - 1)
+      : Math.max(currentIndex - 1, 0)
+    if (next !== currentIndex) {
+      setPreviewImg(allImages[next].src)
+      const thumbEl = thumbBarRef.current?.children[next] as HTMLElement
+      thumbEl?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+    }
+  }
+
+  // 删除示例图
+  const handleDeleteSampleImage = async (src: string) => {
+    if (!video) return
+    const localPath = src.replace('file://', '')
+    if (!confirm('确定删除这张图片？')) return
+    try {
+      await window.api.deleteSampleImage(videoId, localPath)
+      if (previewImg === src) setPreviewImg(null)
+      await loadVideo()
+      message.success('已删除')
+    } catch (e: any) {
+      message.error('删除失败: ' + e.message)
+    }
+  }
+
+  // 上传预览图
+  const handleUploadImage = async () => {
+    const filePath = await window.api.openFileDialog(true)
+    if (!filePath || !video) return
+    setUploading(true)
+    try {
+      const result = await window.api.uploadImage(videoId, filePath)
+      if (result.success) {
+        await loadVideo()
+        message.success('上传成功')
+      } else {
+        message.error(result.error || '上传失败')
+      }
+    } catch (e: any) {
+      message.error('上传失败: ' + e.message)
+    } finally {
+      setUploading(false)
+    }
   }
 
   const handleDelete = async () => {
@@ -152,8 +242,8 @@ export default function DetailPage({ videoId, onBack }: Props) {
   const categoryColors: Record<string, string> = { av: '#FF8FB1', fc2: '#9B59B6', other: '#4ECDC4' }
 
   const allImages = [
-    ...(video.cover_path ? [{ src: `file://${video.cover_path}` }] : []),
-    ...(video.sample_images?.map(img => ({ src: `file://${img.local_path}` })) || [])
+    ...(video.cover_path ? [{ src: `file://${video.cover_path}`, type: 'cover' as const }] : []),
+    ...(video.sample_images?.map(img => ({ src: `file://${img.local_path}`, type: 'sample' as const })) || [])
   ]
 
   return (
@@ -179,7 +269,7 @@ export default function DetailPage({ videoId, onBack }: Props) {
         </button>
         {fanzaUrl && (
           <button className="detail-action-btn" onClick={() => window.api.openExternal(fanzaUrl!)}>
-            <GlobalOutlined /> {video.source === 'JavBus' ? 'JavBus' : 'FANZA'}
+            <GlobalOutlined /> {video.source === 'JavBus' ? 'JavBus' : video.source === 'Caribbeancom' ? 'Caribbean' : video.source === 'video.dmm' ? 'video.dmm' : 'FANZA'}
           </button>
         )}
         <button className="detail-action-btn" onClick={() => setEditing(!editing)}>
@@ -190,37 +280,78 @@ export default function DetailPage({ videoId, onBack }: Props) {
         </button>
       </div>
 
+      {/* 抓取失败时的备选方案 */}
+      {showFallback && (
+        <div style={{
+          display: 'flex', gap: 12, alignItems: 'center', padding: '12px 24px',
+          background: 'rgba(255,150,50,0.08)', borderRadius: 12, margin: '0 24px 12px',
+          border: '1px solid rgba(255,150,50,0.2)', flexWrap: 'wrap'
+        }}>
+          <span style={{ color: '#ff9800', fontSize: 13 }}>自动抓取失败，试试：</span>
+          <button className="detail-action-btn" onClick={handleFetchJavbus} disabled={fetching} style={{ fontSize: 13 }}>
+            <SearchOutlined /> JavBus 抓取
+          </button>
+          <span style={{ color: '#888', fontSize: 12 }}>或</span>
+          <Input
+            size="small"
+            placeholder="粘贴 FANZA / JavBus / DMM 网址"
+            value={customUrl}
+            onChange={e => setCustomUrl(e.target.value)}
+            onPressEnter={handleFetchFromUrl}
+            style={{ width: 320, fontSize: 13 }}
+            prefix={<LinkOutlined style={{ color: '#888' }} />}
+            suffix={
+              <SyncOutlined
+                onClick={handleFetchFromUrl}
+                spin={fetching}
+                style={{ cursor: 'pointer', color: fetching ? '#ccc' : '#1890ff' }}
+              />
+            }
+          />
+        </div>
+      )}
+
       {/* 主体 */}
       <div className="detail-body">
         {/* 左侧图片 */}
         <div className="detail-left">
-          <div className="detail-cover" onClick={() => previewImg && window.open(previewImg, '_blank')}>
+          <div className="detail-cover" onWheel={handleCoverWheel}>
             {previewImg ? (
               <img src={previewImg} alt={video.title || video.code} />
             ) : (
               <div className="detail-cover-empty">🎬</div>
             )}
           </div>
-          {allImages.length > 1 && (
-            <div
-              className="detail-thumbs"
-              onWheel={(e) => {
-                // 滚轮横向滚动
-                const el = e.currentTarget
-                el.scrollLeft += e.deltaY > 0 ? 100 : -100
-              }}
-            >
-              {allImages.map((img, i) => (
-                <div
-                  key={i}
-                  className={`detail-thumb ${previewImg === img.src ? 'active' : ''}`}
-                  onClick={() => setPreviewImg(img.src)}
-                >
-                  <img src={img.src} alt="" />
-                </div>
-              ))}
-            </div>
-          )}
+          <div
+            className="detail-thumbs"
+            ref={thumbBarRef}
+            onWheel={(e) => {
+              const el = e.currentTarget
+              el.scrollLeft += e.deltaY > 0 ? 100 : -100
+            }}
+          >
+            {allImages.map((img, i) => (
+              <div
+                key={i}
+                className={`detail-thumb ${previewImg === img.src ? 'active' : ''}`}
+                onClick={() => setPreviewImg(img.src)}
+              >
+                <img src={img.src} alt="" />
+                {editing && img.type === 'sample' && (
+                  <div className="detail-thumb-delete" onClick={(e) => { e.stopPropagation(); handleDeleteSampleImage(img.src) }}>✕</div>
+                )}
+              </div>
+            ))}
+            {editing && (
+              <div
+                className="detail-thumb detail-thumb-upload"
+                onClick={handleUploadImage}
+                title="上传预览图"
+              >
+                {uploading ? '⏳' : '＋'}
+              </div>
+            )}
+          </div>
           {/* 完整标题在预览图下方 */}
           <div className="detail-title-below">
             {title || video.code}

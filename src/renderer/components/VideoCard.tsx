@@ -71,6 +71,8 @@ export default function VideoCard({ video, onViewDetail, onRefresh, selectable, 
       <div className="video-card-poster">
         {video.cover_path ? (
           <img src={`file://${video.cover_path}`} alt={video.title || video.code} loading="lazy" />
+        ) : video.sample_images && video.sample_images.length > 0 ? (
+          <img src={`file://${video.sample_images[0].local_path}`} alt={video.title || video.code} loading="lazy" />
         ) : (
           <div style={{
             position: 'absolute', inset: 0,

@@ -8,8 +8,7 @@ import {
   getRandomVideo,
   addSampleImages,
   getTagsWithCount,
-  getCategoryCounts,
-  getVideoByCode
+  getCategoryCounts
 } from '../database/video'
 import { scanFolder, parseCode } from '../scanner/scanner'
 import { probeVideo } from '../ffprobe/probe'
@@ -18,15 +17,34 @@ import { fetchFc2 } from '../crawler/fc2'
 import { fetchJavbus } from '../crawler/javbus'
 import { fetchVideoDmm } from '../crawler/video-dmm'
 import { searchVideoDmmId } from '../crawler/video-dmm-search'
+import { fetchCaribbeancom } from '../crawler/caribbeancom'
 import { downloadImage } from '../utils/download'
-import { getCoversDir, getSetting, setSetting } from '../database/schema'
+import { getCoversDir, getSetting, setSetting, getDb } from '../database/schema'
 import { setApiKey, setApiBase, getApiKey, setModel } from '../utils/ai-translate'
+import { detectSystemProxy } from '../utils/proxy'
 import { join } from 'path'
 import type { VideoFilters, CrawlResult } from '../../shared/types'
 
 let proxyConfig = { enabled: false, protocol: 'http' as const, host: '', port: 0 }
 
 export function registerIpcHandlers(): void {
+  // 启动时从数据库加载代理设置，无则自动检测系统代理
+  const savedProxy = getSetting('proxy_config')
+  if (savedProxy) {
+    try {
+      proxyConfig = JSON.parse(savedProxy)
+      console.log('[设置] 已加载代理:', proxyConfig.enabled ? `${proxyConfig.host}:${proxyConfig.port}` : '关闭')
+    } catch {}
+  } else {
+    detectSystemProxy().then(detected => {
+      if (detected) {
+        proxyConfig = { enabled: true, ...detected }
+        setSetting('proxy_config', JSON.stringify(proxyConfig))
+        console.log('[设置] 自动检测到代理:', detected.host, detected.port)
+      }
+    }).catch(() => {})
+  }
+
   // 视频 CRUD
   ipcMain.handle('video:list', (_, filters: VideoFilters) => {
     return listVideos(filters)
@@ -61,60 +79,43 @@ export function registerIpcHandlers(): void {
     return getCategoryCounts()
   })
 
-  // 爬虫（FANZA → video.dmm GraphQL → JavBus）
+  // 爬虫（video.dmm → FANZA → 由 UI 层提供 JavBus / URL 选项）
   ipcMain.handle('crawler:fetchAv', async (_, code: string) => {
     const proxy = proxyConfig.enabled ? proxyConfig : undefined
 
-    // 先尝试 FANZA（cheerio）
+    // Caribbeancom 格式：digits-digits（如 072015-925, 010217-340）
+    if (/^\d{6}-\d{2,4}$/.test(code)) {
+      try {
+        const result = await fetchCaribbeancom(code, proxy)
+        return { success: true, data: result }
+      } catch (caribError: any) {
+        console.log('[抓取] Caribbeancom 失败:', caribError.message)
+        return { success: false, error: caribError.message }
+      }
+    }
+
+    // 优先 video.dmm
+    try {
+      console.log('[抓取] 尝试 video.dmm:', code)
+      const videoDmmId = await searchVideoDmmId(code, proxy)
+      if (videoDmmId) {
+        const detailUrl = `https://video.dmm.co.jp/av/content/?id=${videoDmmId}`
+        console.log('[抓取] video.dmm 详情页:', detailUrl)
+        const result = await fetchVideoDmm(detailUrl, proxy)
+        return { success: true, data: result }
+      }
+      console.log('[抓取] video.dmm 未找到')
+    } catch (videoDmmError: any) {
+      console.log('[抓取] video.dmm 失败:', videoDmmError.message)
+    }
+
+    // FANZA 备用
     try {
       const result = await fetchFanza(code, proxy)
       return { success: true, data: result }
     } catch (fanzaError: any) {
       console.log('[抓取] FANZA 失败:', fanzaError.message)
-    }
-
-    // FANZA 失败，尝试 video.dmm GraphQL 搜索
-    try {
-      console.log('[抓取] 尝试 video.dmm GraphQL 搜索:', code)
-
-      // 检查数据库中是否已有缓存的 video_dmm_id
-      const existingVideo = await getVideoByCode(code)
-      let videoDmmId = existingVideo?.video_dmm_id || null
-
-      if (videoDmmId) {
-        console.log('[抓取] 使用缓存的 video_dmm_id:', videoDmmId)
-      } else {
-        // 全量分页搜索
-        videoDmmId = await searchVideoDmmId(code, proxy)
-        if (videoDmmId) {
-          console.log('[抓取] 搜索到 video_dmm_id:', videoDmmId)
-          // 保存到数据库
-          if (existingVideo) {
-            await updateVideo(existingVideo.id, { video_dmm_id: videoDmmId })
-            console.log('[抓取] 已缓存 video_dmm_id 到数据库')
-          }
-        }
-      }
-
-      if (!videoDmmId) {
-        throw new Error('video.dmm 未找到匹配结果')
-      }
-
-      // 用完整 ID 构造详情页 URL
-      const detailUrl = `https://video.dmm.co.jp/av/content/?id=${videoDmmId}`
-      console.log('[抓取] 详情页:', detailUrl)
-      const result = await fetchVideoDmm(detailUrl, proxy)
-      return { success: true, data: result }
-    } catch (videoDmmError: any) {
-      console.log('[抓取] video.dmm 失败:', videoDmmError.message)
-    }
-
-    // 都失败，尝试 JavBus
-    try {
-      const result = await fetchJavbus(code, proxy)
-      return { success: true, data: result }
-    } catch (javbusError: any) {
-      return { success: false, error: `FANZA + video.dmm + JavBus 均失败` }
+      return { success: false, error: fanzaError.message }
     }
   })
 
@@ -122,6 +123,59 @@ export function registerIpcHandlers(): void {
     try {
       const result = await fetchFc2(code, proxyConfig.enabled ? proxyConfig : undefined)
       return { success: true, data: result }
+    } catch (error: any) {
+      return { success: false, error: error.message }
+    }
+  })
+
+  // 单独 JavBus 抓取
+  ipcMain.handle('crawler:fetchJavbus', async (_, code: string) => {
+    try {
+      const proxy = proxyConfig.enabled ? proxyConfig : undefined
+      const result = await fetchJavbus(code, proxy)
+      return { success: true, data: result }
+    } catch (error: any) {
+      return { success: false, error: error.message }
+    }
+  })
+
+  // 从用户提供的 URL 抓取
+  ipcMain.handle('crawler:fetchFromUrl', async (_, url: string) => {
+    try {
+      const proxy = proxyConfig.enabled ? proxyConfig : undefined
+      if (url.includes('javbus.com') || url.includes('javbus.org')) {
+        // JavBus URL - 提取番号
+        const codeMatch = url.match(/javbus\.(?:com|org)\/([^/?#]+)/i)
+        if (!codeMatch) throw new Error('无法从 URL 提取番号')
+        const result = await fetchJavbus(codeMatch[1], proxy)
+        return { success: true, data: result }
+      } else if (url.includes('caribbeancom.com')) {
+        const codeMatch = url.match(/moviepages\/([^/]+)/i)
+        if (!codeMatch) throw new Error('无法从 Caribbeancom URL 提取番号')
+        const result = await fetchCaribbeancom(codeMatch[1], proxy)
+        return { success: true, data: result }
+      } else if (url.includes('dmm.co.jp')) {
+        // FANZA 详情页 URL → 提取 CID 用 fetchFanza
+        const cidMatch = url.match(/cid=([a-z0-9]+)/i)
+        if (cidMatch) {
+          const cid = cidMatch[1]
+          // CID 转番号：ipx473 → IPX-473, pred00836 → PRED-836
+          const codeMatch = cid.match(/^([a-z]+)(\d+)$/i)
+          if (codeMatch) {
+            const code = `${codeMatch[1].toUpperCase()}-${parseInt(codeMatch[2])}`
+            try {
+              const result = await fetchFanza(code, proxy)
+              return { success: true, data: result }
+            } catch {}
+          }
+        }
+        // video.dmm.co.jp 或 FANZA 失败时走 video.dmm
+        const { fetchVideoDmm } = await import('../crawler/video-dmm')
+        const result = await fetchVideoDmm(url, proxy)
+        return { success: true, data: result }
+      } else {
+        throw new Error('不支持的 URL 格式（支持 JavBus / Caribbeancom / DMM）')
+      }
     } catch (error: any) {
       return { success: false, error: error.message }
     }
@@ -145,6 +199,19 @@ export function registerIpcHandlers(): void {
       // 下载示例图，跳过 404，限制 30 张，去重
       const maxImages = 30
       const downloadedHashes = new Set<string>()
+      // 清除旧的示例图记录和文件（防止重复抓取导致重复图片）
+      const db = getDb()
+      const oldSamples = db.exec('SELECT local_path FROM sample_images WHERE video_id = ?', [videoId])
+      if (oldSamples.length > 0) {
+        for (const row of oldSamples[0].values) {
+          const filePath = row[0] as string | null
+          if (filePath && require('fs').existsSync(filePath)) {
+            try { require('fs').unlinkSync(filePath) } catch {}
+          }
+        }
+      }
+      db.run('DELETE FROM sample_images WHERE video_id = ?', [videoId])
+
       console.log('[下载] 开始下载示例图, 共', sampleUrls.length, '个URL')
       for (let i = 0; i < sampleUrls.length && results.sample_paths.length < maxImages; i++) {
         try {
@@ -189,6 +256,38 @@ export function registerIpcHandlers(): void {
     }
   })
 
+  // 上传本地图片作为预览图
+  ipcMain.handle('crawler:uploadImage', async (_, videoId: number, filePath: string) => {
+    try {
+      const fs = require('fs')
+      const db = getDb()
+      const coversDir = getCoversDir()
+      const ext = filePath.split('.').pop() || 'jpg'
+      const existingSamples = db.exec('SELECT COUNT(*) FROM sample_images WHERE video_id = ?', [videoId])
+      const count = existingSamples.length > 0 ? existingSamples[0].values[0][0] as number : 0
+      const sampleFileName = `${videoId}_sample_${count}.${ext}`
+      const samplePath = join(coversDir, sampleFileName)
+      fs.copyFileSync(filePath, samplePath)
+      addSampleImages(videoId, [{ local_path: samplePath }])
+      return { success: true, path: samplePath }
+    } catch (error: any) {
+      return { success: false, error: error.message }
+    }
+  })
+
+  // 删除单张示例图
+  ipcMain.handle('crawler:deleteSampleImage', async (_, videoId: number, localPath: string) => {
+    try {
+      const fs = require('fs')
+      const db = getDb()
+      db.run('DELETE FROM sample_images WHERE video_id = ? AND local_path = ?', [videoId, localPath])
+      if (fs.existsSync(localPath)) fs.unlinkSync(localPath)
+      return { success: true }
+    } catch (error: any) {
+      return { success: false, error: error.message }
+    }
+  })
+
   // 文件扫描
   ipcMain.handle('scanner:scanFolder', (_, folderPath: string) => {
     return scanFolder(folderPath)
@@ -228,6 +327,7 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('settings:setProxy', (_, config) => {
     proxyConfig = config
+    setSetting('proxy_config', JSON.stringify(config))
   })
 
   // AI 翻译设置（从数据库加载/保存）
