@@ -144,10 +144,17 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
 
             // === HTML 元数据表提取（原版 FANZA 逻辑）===
             const getCellText = (label) => {
-              const cells = document.querySelectorAll('td');
-              for (const cell of cells) {
-                if (cell.textContent.trim() === label) {
-                  const next = cell.nextElementSibling;
+              // 先在 th 中查找标签
+              for (const th of document.querySelectorAll('th')) {
+                if (th.textContent.trim() === label) {
+                  const next = th.nextElementSibling;
+                  return next ? next.textContent.trim() : '';
+                }
+              }
+              // 再在 td 中查找（兼容不同页面结构）
+              for (const td of document.querySelectorAll('td')) {
+                if (td.textContent.trim() === label) {
+                  const next = td.nextElementSibling;
                   return next ? next.textContent.trim() : '';
                 }
               }
@@ -174,11 +181,11 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
             const labelRaw = getCellText('レーベル：') || '';
             const label = (labelRaw && labelRaw !== '----') ? labelRaw : '';
 
-            const productCodeRaw = getCellText('品番：') || getCellText('商品番号：') || '';
+            const productCodeRaw = getCellText('配信品番：') || getCellText('メーカー品番：') || getCellText('品番：') || getCellText('商品番号：') || '';
             const productCode = productCodeRaw || '';
 
-            const genreRaw = getCellText('ジャンル：') || '';
-            const tags = genreRaw.split(/\\s+/).filter(t => t.length > 0 && !t.includes('#'));
+            const genreRaw = getCellText('ジャンル：') || getCellText('関連タグ：') || '';
+            const tags = genreRaw.split(/\s+/).filter(t => t.length > 0 && !t.includes('#'));
 
             ({
               title,
