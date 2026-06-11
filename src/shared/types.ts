@@ -15,6 +15,7 @@ export interface Video {
   maker: string | null
   director: string | null
   rating: number | null
+  ratingCount: number | null
   description: string | null
   fanza_url: string | null
   series: string | null
@@ -70,6 +71,7 @@ export interface CrawlResult {
   product_code?: string | null
   tags: string[]
   rating: number | null
+  ratingCount?: number | null
   description: string | null
   fanza_url?: string
   javbus_url?: string

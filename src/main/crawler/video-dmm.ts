@@ -132,7 +132,7 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
               } catch(e) {}
             });
 
-            let title = '', description = '', coverUrl = '', sampleImages = [], actors = [], rating = null;
+            let title = '', description = '', coverUrl = '', sampleImages = [], actors = [], rating = null, ratingCount = null;
             if (product) {
               title = product.name || '';
               description = product.description || '';
@@ -140,6 +140,7 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
               sampleImages = (product.image || []).filter(img => img.includes('jp-'));
               actors = (product.subjectOf?.actor || []).map(a => a.name || '');
               rating = product.aggregateRating?.ratingValue || null;
+              ratingCount = product.aggregateRating?.ratingCount || null;
             }
 
             // === HTML 元数据表提取（原版 FANZA 逻辑）===
@@ -203,7 +204,8 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
               series,
               label,
               productCode,
-              rating
+              rating,
+              ratingCount
             });
           `)
 
@@ -237,6 +239,7 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
             product_code: data.productCode || null,
             tags: translatedTags,
             rating: data.rating || null,
+            ratingCount: data.ratingCount || null,
             description: data.description || null,
             fanza_url: url,
             source: 'video.dmm'
