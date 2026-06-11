@@ -181,7 +181,7 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
             const labelRaw = getCellText('レーベル：') || '';
             const label = (labelRaw && labelRaw !== '----') ? labelRaw : '';
 
-            const productCodeRaw = getCellText('配信品番：') || getCellText('メーカー品番：') || getCellText('品番：') || getCellText('商品番号：') || '';
+            const productCodeRaw = getCellText('メーカー品番：') || getCellText('品番：') || getCellText('作品番号：') || getCellText('配信品番：') || '';
             const productCode = productCodeRaw || '';
 
             const genreRaw = getCellText('ジャンル：') || getCellText('関連タグ：') || '';
