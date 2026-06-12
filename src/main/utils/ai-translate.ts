@@ -62,6 +62,11 @@ export async function aiTranslate(text: string, type: 'title' | 'description' | 
 - TV → TV（保留）
 - 号 → 巴士（仅限魔镜巴士系列）
 
+词汇规则：
+- sex → 发生性关系、做爱（不要翻译为"性"单独一个字）
+- SEX → 性爱
+- セックス → 做爱、性爱
+
 输出要求：仅输出最终中文标题，不要解释、不要备注、不要 Markdown`
 
   const descriptionPrompt = `你是一名中文影视资源站编辑，而不是小说作者。

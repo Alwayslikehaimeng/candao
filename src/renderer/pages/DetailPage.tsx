@@ -269,7 +269,7 @@ export default function DetailPage({ videoId, onBack }: Props) {
         </button>
         {fanzaUrl && (
           <button className="detail-action-btn" onClick={() => window.api.openExternal(fanzaUrl!)}>
-            <GlobalOutlined /> {video.source === 'JavBus' ? 'JavBus' : video.source === 'Caribbeancom' ? 'Caribbean' : video.source === 'video.dmm' ? 'video.dmm' : 'FANZA'}
+            <GlobalOutlined /> {video.source === 'JavBus' ? 'JavBus' : video.source === 'Caribbeancom' ? 'Caribbean' : 'FANZA'}
           </button>
         )}
         <button className="detail-action-btn" onClick={() => setEditing(!editing)}>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Spin, message, Modal } from 'antd'
-import { CheckSquareOutlined, DeleteOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons'
+import { CheckSquareOutlined, DeleteOutlined, SortAscendingOutlined, SortDescendingOutlined, SyncOutlined } from '@ant-design/icons'
 import { useVideoStore } from '../stores/videoStore'
 import VideoGrid from '../components/VideoGrid'
 import type { Video } from '../../shared/types'
@@ -13,6 +13,7 @@ export default function HomePage({ onViewDetail }: Props) {
   const { videos, loading, filters, setFilters, refreshVideos } = useVideoStore()
   const [batchMode, setBatchMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [reCrawling, setReCrawling] = useState(false)
 
   useEffect(() => {
     refreshVideos()
@@ -33,6 +34,38 @@ export default function HomePage({ onViewDetail }: Props) {
     } else {
       setSelectedIds(new Set(videos.map(v => v.id)))
     }
+  }
+
+  const handleReCrawl = (mode: 'all' | 'selected') => {
+    const count = mode === 'selected' ? selectedIds.size : videos.length
+    if (mode === 'selected' && selectedIds.size === 0) {
+      message.warning('请先选择要抓取的视频')
+      return
+    }
+    Modal.confirm({
+      title: '批量重新抓取',
+      content: `确定要重新抓取 ${count} 个视频吗？这会更新标题、标签、封面等信息。`,
+      okText: '开始抓取',
+      cancelText: '取消',
+      onOk: async () => {
+        setReCrawling(true)
+        const ids = mode === 'selected' ? Array.from(selectedIds) : undefined
+        message.loading({ content: '正在批量抓取，请耐心等待...', key: 'reCrawl', duration: 0 })
+        try {
+          const result = await window.api.reCrawlAll(ids)
+          message.success({ content: `抓取完成：成功 ${result.success}，失败 ${result.failed}，跳过 ${result.skipped}`, key: 'reCrawl' })
+          refreshVideos()
+          if (mode === 'selected') {
+            setSelectedIds(new Set())
+            setBatchMode(false)
+          }
+        } catch (e: any) {
+          message.error({ content: '抓取失败: ' + e.message, key: 'reCrawl' })
+        } finally {
+          setReCrawling(false)
+        }
+      }
+    })
   }
 
   const handleBatchDelete = () => {
@@ -88,6 +121,14 @@ export default function HomePage({ onViewDetail }: Props) {
             {filters.sortOrder === 'asc' ? <SortAscendingOutlined /> : <SortDescendingOutlined />}
           </button>
         </div>
+        <button
+          className="top-bar-btn"
+          onClick={() => batchMode ? handleReCrawl('selected') : handleReCrawl('all')}
+          disabled={reCrawling}
+          title={batchMode ? `重新抓取选中 (${selectedIds.size})` : '重新抓取全部'}
+        >
+          <SyncOutlined spin={reCrawling} />
+        </button>
         <button
           className={`top-bar-btn ${batchMode ? 'active' : ''}`}
           onClick={() => { setBatchMode(!batchMode); setSelectedIds(new Set()) }}

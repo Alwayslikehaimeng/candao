@@ -27,6 +27,8 @@ const api = {
     ipcRenderer.invoke('crawler:uploadImage', videoId, filePath),
   deleteSampleImage: (videoId: number, localPath: string): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke('crawler:deleteSampleImage', videoId, localPath),
+  reCrawlAll: (videoIds?: number[]): Promise<{ success: number; failed: number; skipped: number }> =>
+    ipcRenderer.invoke('crawler:reCrawlAll', videoIds),
   downloadImages: (
     videoId: number,
     coverUrl: string,

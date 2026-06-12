@@ -57,6 +57,18 @@ const TAG_DICT: Record<string, string> = {
   'イメージビデオ': '写真视频', 'コンドーム': '避孕套', '妊娠': '怀孕', '汗だく': '满身大汗', 'デジモ': '数码马赛克',
   '女優': '女优', '男優': '男优', '引退': '退役', '復活': '复出',
   '動画': '视频', 'ヘルス': '保健', '全体': '全部', '素人': '素人',
+  'ハメ': '做爱', 'ニューハーフ': '变性人', 'ドキュメンタリー': '纪录片',
+  'デカチン': '大屌', '巨根': '巨根', 'ビッチ': '荡妇', 'フェラ': '口交',
+  'パイズリ': '乳交', '手コキ': '手交', '尻コキ': '臀交',
+  'アヘ顔': '阿黑颜', 'イキ顔': '高潮脸', 'アクメ': '高潮',
+  'セックスレス': '无性生活', '不貞': '出轨', '裏切り': '背叛',
+  '凌辱': '凌辱', '陵辱': '凌辱', '催眠': '催眠', '洗脳': '洗脑',
+  '夜這い': '夜袭', '痴漢': '痴汉', '盗撮': '偷拍', '覗き': '偷窥',
+  '浮気': '出轨', '寝取り': '被绿', '寝取られ': '被绿',
+  'メス堕ち': '雌堕落', '快楽堕ち': '快感堕落',
+  'גברים': '猛男', '筋肉': '肌肉', 'マッチョ': '肌肉男',
+  '₷': '容易', 'ヤリマン': '公交车', 'ビューティー': '美女',
+  'ギャル': '辣妹', 'ヤンキー': '不良少女', 'スケバン': '不良女',
 }
 
 const SKIP_TAGS = new Set(['サンプル動画', 'レビュー', '販売', 'レンタル', 'サンプル', 'アウトレット', 'セール', '限定'])
@@ -191,6 +203,10 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
             const productCodeRaw = getCellText('メーカー品番：') || getCellText('品番：') || getCellText('作品番号：') || getCellText('配信品番：') || '';
             const productCode = productCodeRaw || '';
 
+            // 类型
+            const videoTypeRaw = getCellText('ジャンル：') || getCellText('形式：') || '';
+            const videoType = (videoTypeRaw && videoTypeRaw !== '----') ? videoTypeRaw.split(/\\s+/)[0] : '';
+
             // 演员：JSON-LD 优先，th 备用
             if (actors.length === 0) {
               const actorRaw = getCellText('出演者：') || '';
@@ -232,6 +248,7 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
               maker,
               series,
               label,
+              videoType,
               productCode,
               rating,
               ratingCount
@@ -270,6 +287,30 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
             translatedTitle = await translateToChinese(data.title) || data.title
           }
 
+          // 系列翻译
+          let translatedSeries = data.series || null
+          if (translatedSeries && /[぀-ゟ゠-ヿ]/.test(translatedSeries)) {
+            if (hasKey) {
+              const aiSeries = await aiTranslate(translatedSeries, 'title')
+              if (aiSeries && aiSeries !== translatedSeries) translatedSeries = aiSeries
+            } else {
+              const googleSeries = await translateToChinese(translatedSeries)
+              if (googleSeries && googleSeries !== translatedSeries) translatedSeries = googleSeries
+            }
+          }
+
+          // 类型翻译
+          let translatedVideoType = data.videoType || null
+          if (translatedVideoType && /[぀-ゟ゠-ヿ]/.test(translatedVideoType)) {
+            // 先用词典翻译
+            translatedVideoType = translateTagsSync([translatedVideoType])[0]
+            // 词典没命中用 AI
+            if (/[぀-ゟ゠-ヿ]/.test(translatedVideoType) && hasKey) {
+              const aiType = await aiTranslate(translatedVideoType, 'title')
+              if (aiType && aiType !== translatedVideoType) translatedVideoType = aiType
+            }
+          }
+
           // 简介翻译
           let translatedDesc = data.description || ''
           if (translatedDesc) {
@@ -293,9 +334,9 @@ export async function fetchVideoDmm(url: string, proxy?: ProxyConfig): Promise<C
             actors: data.actors || [],
             director: data.director || null,
             maker: data.maker || null,
-            series: data.series || null,
+            series: translatedSeries || null,
             label: data.label || null,
-            video_type: null,
+            video_type: translatedVideoType || null,
             product_code: data.productCode || null,
             tags: translatedTags,
             rating: data.rating || null,

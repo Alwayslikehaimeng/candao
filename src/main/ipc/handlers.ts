@@ -288,6 +288,104 @@ export function registerIpcHandlers(): void {
     }
   })
 
+  // 批量重新抓取视频（可选指定 ID 列表）
+  ipcMain.handle('crawler:reCrawlAll', async (_, videoIds?: number[]) => {
+    const proxy = proxyConfig.enabled ? proxyConfig : undefined
+    const allVideos = videoIds
+      ? videoIds.map(id => getVideo(id)).filter(Boolean)
+      : listVideos({})
+    console.log(`[批量抓取] 共 ${allVideos.length} 个视频`)
+
+    let success = 0
+    let failed = 0
+    let skipped = 0
+
+    for (const video of allVideos) {
+      const code = video.code
+      const category = video.category
+
+      // FC2 和其他分类跳过
+      if (category === 'fc2' || category === 'other') {
+        skipped++
+        continue
+      }
+
+      console.log(`[批量抓取] ${success + failed + skipped + 1}/${allVideos.length}: ${code}`)
+
+      try {
+        let result
+
+        // Caribbeancom 格式
+        if (/^\d{6}-\d{2,4}$/.test(code)) {
+          result = await fetchCaribbeancom(code, proxy)
+        } else {
+          // 优先 video.dmm
+          try {
+            const videoDmmId = await searchVideoDmmId(code, proxy)
+            if (videoDmmId) {
+              const detailUrl = `https://video.dmm.co.jp/av/content/?id=${videoDmmId}`
+              result = await fetchVideoDmm(detailUrl, proxy)
+            }
+          } catch {}
+
+          // FANZA 备用
+          if (!result) {
+            try {
+              result = await fetchFanza(code, proxy)
+            } catch {}
+          }
+        }
+
+        if (result) {
+          await updateVideo(video.id, {
+            title: result.title || video.title,
+            rating: result.rating || video.rating,
+            release_date: result.release_date || video.release_date,
+            duration: result.duration || video.duration,
+            maker: result.maker || video.maker,
+            director: result.director || video.director,
+            description: result.description || video.description,
+            fanza_url: result.fanza_url || video.fanza_url,
+            series: result.series || video.series,
+            label: result.label || video.label,
+            video_type: result.video_type || video.video_type,
+            product_code: result.product_code || video.product_code,
+            actors: result.actors?.length > 0 ? result.actors : video.actors,
+            tags: result.tags?.length > 0 ? result.tags : video.tags,
+            source: result.source || video.source
+          })
+
+          // 下载封面和示例图
+          if (result.cover_url) {
+            try {
+              const coversDir = getCoversDir()
+              const { downloadImage } = require('../utils/download')
+              const coverFileName = `${video.id}_cover.jpg`
+              const coverPath = path.join(coversDir, coverFileName)
+              await downloadImage(result.cover_url, coverPath)
+              updateVideo(video.id, { cover_path: coverPath })
+            } catch {}
+          }
+
+          success++
+          console.log(`[批量抓取] ✅ ${code}`)
+        } else {
+          failed++
+          console.log(`[批量抓取] ❌ ${code} - 未找到`)
+        }
+      } catch (e) {
+        failed++
+        console.log(`[批量抓取] ❌ ${code} - ${e.message}`)
+      }
+
+      // 避免请求过快
+      await new Promise(r => setTimeout(r, 1000))
+    }
+
+    console.log(`[批量抓取] 完成: 成功 ${success}, 失败 ${failed}, 跳过 ${skipped}`)
+    return { success, failed, skipped }
+  })
+
   // 文件扫描
   ipcMain.handle('scanner:scanFolder', (_, folderPath: string) => {
     return scanFolder(folderPath)

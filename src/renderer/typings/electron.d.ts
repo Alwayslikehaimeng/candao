@@ -18,6 +18,7 @@ interface ElectronAPI {
   fetchFromUrl: (url: string) => Promise<{ success: boolean; data?: CrawlResult; error?: string }>
   uploadImage: (videoId: number, filePath: string) => Promise<{ success: boolean; path?: string; error?: string }>
   deleteSampleImage: (videoId: number, localPath: string) => Promise<{ success: boolean; error?: string }>
+  reCrawlAll: (videoIds?: number[]) => Promise<{ success: number; failed: number; skipped: number }>
   downloadImages: (videoId: number, coverUrl: string, sampleUrls: string[]) => Promise<{ success: boolean; data?: any; error?: string }>
   scanFolder: (folderPath: string) => Promise<ScanResult[]>
   parseCode: (filename: string) => Promise<string | null>
