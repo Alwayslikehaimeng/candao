@@ -136,7 +136,9 @@ export default function AddVideoModal({ open, onClose, onRefresh }: Props) {
             description: d.description,
             fanza_url: d.fanza_url,
             actors: d.actors.length > 0 ? d.actors : splitStr(actors),
-            tags: d.tags.length > 0 ? d.tags : splitStr(tags)
+            tags: d.tags.length > 0 ? d.tags : splitStr(tags),
+            file_size: videoInfo.file_size,
+            frame_rate: videoInfo.frame_rate
           })
           if (d.cover_url) {
             message.loading({ content: '正在下载封面...', key: 'crawl' })
@@ -162,7 +164,9 @@ export default function AddVideoModal({ open, onClose, onRefresh }: Props) {
         duration: videoInfo.duration,
         resolution: videoInfo.resolution,
         actors: splitStr(actors),
-        tags: splitStr(tags)
+        tags: splitStr(tags),
+        file_size: videoInfo.file_size,
+        frame_rate: videoInfo.frame_rate
       })
 
       message.success('添加成功')

@@ -73,6 +73,8 @@ export async function initDatabase(): Promise<void> {
   addColumnIfNotExists('videos', 'source', 'TEXT')
   addColumnIfNotExists('videos', 'video_dmm_id', 'TEXT')
   addColumnIfNotExists('videos', 'ratingCount', 'INTEGER')
+  addColumnIfNotExists('videos', 'file_size', 'INTEGER')
+  addColumnIfNotExists('videos', 'frame_rate', 'REAL')
 
   db.run(`
     CREATE TABLE IF NOT EXISTS actors (

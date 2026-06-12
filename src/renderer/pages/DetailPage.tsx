@@ -361,10 +361,11 @@ export default function DetailPage({ videoId, onBack }: Props) {
           {!editing && (
             <div className="detail-file-info">
               {[
-                { label: '格式', value: video.file_path?.split('.').pop()?.toUpperCase() || '—' },
-                { label: '分辨率', value: video.resolution || '—' },
+                { label: '大小', value: video.file_size ? (video.file_size > 1073741824 ? `${(video.file_size / 1073741824).toFixed(2)} GB` : `${(video.file_size / 1048576).toFixed(1)} MB`) : '—' },
                 { label: '时长', value: duration ? `${Math.floor(parseInt(duration) / 3600).toString().padStart(2, '0')}:${Math.floor((parseInt(duration) % 3600) / 60).toString().padStart(2, '0')}:${(parseInt(duration) % 60).toString().padStart(2, '0')}` : '—' },
-                { label: '导入时间', value: video.created_at?.split('T')[0] || video.created_at?.split(' ')[0] || '—' },
+                { label: '分辨率', value: video.resolution || '—' },
+                { label: '帧率', value: video.frame_rate ? `${video.frame_rate} fps` : '—' },
+                { label: '修改日期', value: video.updated_at?.split('T')[0] || video.updated_at?.split(' ')[0] || '—' },
               ].map((item, i) => (
                 <div key={i} className="detail-file-info-row">
                   <span className="detail-file-info-label">{item.label}</span>

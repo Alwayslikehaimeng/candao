@@ -151,12 +151,14 @@ export function createVideo(data: {
   label?: string
   video_type?: string
   product_code?: string
+  file_size?: number
+  frame_rate?: number
   actors?: string[]
   tags?: string[]
 }): Video {
   run(
-    `INSERT INTO videos (code, category, title, cover_path, file_path, duration, resolution, release_date, maker, director, rating, description, fanza_url, series, label, video_type, product_code)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO videos (code, category, title, cover_path, file_path, duration, resolution, release_date, maker, director, rating, description, fanza_url, series, label, video_type, product_code, file_size, frame_rate)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       data.code,
       data.category,
@@ -174,7 +176,9 @@ export function createVideo(data: {
       data.series || null,
       data.label || null,
       data.video_type || null,
-      data.product_code || null
+      data.product_code || null,
+      data.file_size || null,
+      data.frame_rate || null
     ]
   )
 

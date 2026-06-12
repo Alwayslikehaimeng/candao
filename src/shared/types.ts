@@ -24,6 +24,8 @@ export interface Video {
   product_code: string | null
   source: string | null
   video_dmm_id: string | null
+  file_size: number | null
+  frame_rate: number | null
   created_at: string
   updated_at: string
   actors?: Actor[]
@@ -92,6 +94,8 @@ export interface VideoInfo {
   resolution: string
   codec: string
   bitrate: number
+  frame_rate: number
+  file_size: number
 }
 
 // 代理配置
