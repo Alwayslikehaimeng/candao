@@ -65,7 +65,11 @@ export default function App() {
 
   const handleRandomPlay = async () => {
     const video = await window.api.randomPlay()
-    if (!video) message.info('媒体库为空')
+    if (!video) {
+      message.info('媒体库为空')
+      return
+    }
+    handleViewDetail(video)
   }
 
   const isWallpaper = bgMode !== 'none'

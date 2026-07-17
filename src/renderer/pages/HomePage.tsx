@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Spin, message, Modal } from 'antd'
 import { CheckSquareOutlined, DeleteOutlined, SortAscendingOutlined, SortDescendingOutlined, SyncOutlined } from '@ant-design/icons'
 import { useVideoStore } from '../stores/videoStore'
 import VideoGrid from '../components/VideoGrid'
 import type { Video } from '../../shared/types'
+
+const SCROLL_KEY = 'homeScrollTop'
 
 interface Props {
   onViewDetail: (video: Video) => void
@@ -14,10 +16,28 @@ export default function HomePage({ onViewDetail }: Props) {
   const [batchMode, setBatchMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [reCrawling, setReCrawling] = useState(false)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     refreshVideos()
   }, [filters])
+
+  // 返回时恢复滚动位置
+  useEffect(() => {
+    const saved = sessionStorage.getItem(SCROLL_KEY)
+    if (saved && scrollRef.current) {
+      scrollRef.current.scrollTop = parseInt(saved)
+      sessionStorage.removeItem(SCROLL_KEY)
+    }
+  }, [videos])
+
+  const handleViewDetail = (video: Video) => {
+    // 进入详情前保存滚动位置
+    if (scrollRef.current) {
+      sessionStorage.setItem(SCROLL_KEY, String(scrollRef.current.scrollTop))
+    }
+    onViewDetail(video)
+  }
 
   const handleToggleSelect = (id: number) => {
     setSelectedIds(prev => {
@@ -156,16 +176,17 @@ export default function HomePage({ onViewDetail }: Props) {
       )}
 
       {/* 视频网格 */}
-      <div className="video-grid-wrap">
+      <div className="video-grid-wrap" ref={scrollRef}>
         <Spin spinning={loading}>
           {videos.length > 0 ? (
             <VideoGrid
               videos={videos}
-              onViewDetail={onViewDetail}
+              onViewDetail={handleViewDetail}
               onRefresh={refreshVideos}
               selectable={batchMode}
               selectedIds={selectedIds}
               onToggleSelect={handleToggleSelect}
+              sortBy={filters.sortBy}
             />
           ) : (
             !loading && (

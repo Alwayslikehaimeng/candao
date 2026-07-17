@@ -776,6 +776,53 @@ body {
   gap: 20px;
 }
 
+/* 系列分区布局 */
+.video-grid-grouped {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.series-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.series-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 4px 8px;
+  border-bottom: 2px solid var(--candao-pink);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--candao-bg);
+}
+
+.theme-wallpaper .series-header {
+  background: rgba(15, 15, 15, 0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.series-header-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--candao-pink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.series-header-count {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--candao-text-muted);
+  flex-shrink: 0;
+}
+
 /* ===== 视频卡片 ===== */
 .video-card {
   border-radius: var(--radius-lg);

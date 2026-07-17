@@ -17,7 +17,8 @@ function createWindow(): void {
     frame: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      webSecurity: !!app.isPackaged
     }
   })
 

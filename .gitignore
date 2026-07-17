@@ -9,3 +9,6 @@ Thumbs.db
 .env
 .env.local
 desktop.ini
+.agents/
+skills-lock.json
+.claude/skills/
