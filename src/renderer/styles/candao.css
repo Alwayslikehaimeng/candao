@@ -823,6 +823,13 @@ body {
   flex-shrink: 0;
 }
 
+/* 无系列区域分隔线 */
+.series-divider {
+  height: 0;
+  border-top: 2px solid var(--candao-border);
+  margin-bottom: 4px;
+}
+
 /* ===== 视频卡片 ===== */
 .video-card {
   border-radius: var(--radius-lg);

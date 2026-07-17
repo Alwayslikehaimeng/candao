@@ -54,11 +54,12 @@ export default function VideoGrid({ videos, onViewDetail, onRefresh, selectable,
 
   // 系列排序 → 分组展示
   const sections = groupBySeries(videos)
+  const hasNamed = sections.some(s => s.series)
   let animIndex = 0
 
   return (
     <div className="video-grid-grouped" key="grouped">
-      {sections.map(section => (
+      {sections.map((section, i) => (
         <div key={section.series || '__unnamed__'} className="series-section">
           {section.series && (
             <div
@@ -69,6 +70,7 @@ export default function VideoGrid({ videos, onViewDetail, onRefresh, selectable,
               <span className="series-header-count">{section.videos.length}</span>
             </div>
           )}
+          {!section.series && hasNamed && <div className="series-divider" />}
           <div className="video-grid">
             {section.videos.map(video => (
               <div

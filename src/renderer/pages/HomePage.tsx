@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Spin, message, Modal } from 'antd'
 import { CheckSquareOutlined, DeleteOutlined, SortAscendingOutlined, SortDescendingOutlined, SyncOutlined } from '@ant-design/icons'
 import { useVideoStore } from '../stores/videoStore'
@@ -22,8 +22,8 @@ export default function HomePage({ onViewDetail }: Props) {
     refreshVideos()
   }, [filters])
 
-  // 返回时恢复滚动位置
-  useEffect(() => {
+  // 返回时恢复滚动位置（用 useLayoutEffect 避免闪烁）
+  useLayoutEffect(() => {
     const saved = sessionStorage.getItem(SCROLL_KEY)
     if (saved && scrollRef.current) {
       scrollRef.current.scrollTop = parseInt(saved)
