@@ -29,10 +29,13 @@ export default function HomePage({ onViewDetail }: Props) {
     if (saved && scrollRef.current) {
       scrollRef.current.scrollTop = parseInt(saved)
       sessionStorage.removeItem(SCROLL_KEY)
-      // 估算滚动位置在第几张卡片附近（每行约 260px 宽，每张约 310px 高）
+      // 只有从详情页返回时才用中心发散动画
       const cols = Math.max(1, Math.floor((scrollRef.current.clientWidth || 1200) / 260))
       const row = Math.floor(parseInt(saved) / 310)
       setCenterIndex(row * cols)
+    } else {
+      // 切换排序等非返回场景，恢复默认顺序动画
+      setCenterIndex(null)
     }
   }, [videos])
 
