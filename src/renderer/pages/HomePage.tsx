@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Spin, message, Modal } from 'antd'
 import { CheckSquareOutlined, DeleteOutlined, SortAscendingOutlined, SortDescendingOutlined, SyncOutlined } from '@ant-design/icons'
 import { useVideoStore } from '../stores/videoStore'
@@ -22,12 +22,17 @@ export default function HomePage({ onViewDetail }: Props) {
     refreshVideos()
   }, [filters])
 
-  // 返回时恢复滚动位置（用 useLayoutEffect 避免闪烁）
-  useLayoutEffect(() => {
+  // 返回时恢复滚动位置，并估算中心卡片序号供动画使用
+  const [centerIndex, setCenterIndex] = useState<number | null>(null)
+  useEffect(() => {
     const saved = sessionStorage.getItem(SCROLL_KEY)
     if (saved && scrollRef.current) {
       scrollRef.current.scrollTop = parseInt(saved)
       sessionStorage.removeItem(SCROLL_KEY)
+      // 估算滚动位置在第几张卡片附近（每行约 260px 宽，每张约 310px 高）
+      const cols = Math.max(1, Math.floor((scrollRef.current.clientWidth || 1200) / 260))
+      const row = Math.floor(parseInt(saved) / 310)
+      setCenterIndex(row * cols)
     }
   }, [videos])
 
@@ -187,6 +192,7 @@ export default function HomePage({ onViewDetail }: Props) {
               selectedIds={selectedIds}
               onToggleSelect={handleToggleSelect}
               sortBy={filters.sortBy}
+              centerIndex={centerIndex}
             />
           ) : (
             !loading && (

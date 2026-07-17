@@ -826,7 +826,7 @@ body {
 /* 无系列区域分隔线 */
 .series-divider {
   height: 0;
-  border-top: 2px solid var(--candao-border);
+  border-top: 2px solid var(--candao-pink);
   margin-bottom: 4px;
 }
 
@@ -1435,6 +1435,11 @@ body {
 
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-16px); }
   to { opacity: 1; transform: translateY(0); }
 }
 

@@ -9,6 +9,17 @@ interface Props {
   selectedIds?: Set<number>
   onToggleSelect?: (id: number) => void
   sortBy?: string
+  centerIndex?: number | null
+}
+
+// 卡片动画：有 centerIndex 时从中心向两边发散，否则默认顺序
+function cardAnim(index: number, centerIndex: number | null | undefined): React.CSSProperties {
+  if (centerIndex == null) {
+    return { animation: `slideUp 0.3s ease-out ${index * 0.03}s both` }
+  }
+  const dist = Math.abs(index - centerIndex)
+  const dir = index <= centerIndex ? 'slideDown' : 'slideUp'
+  return { animation: `${dir} 0.3s ease-out ${dist * 0.02}s both` }
 }
 
 // 分组：按系列名聚合，不依赖后端排序顺序
@@ -28,7 +39,7 @@ function groupBySeries(videos: Video[]): { series: string; videos: Video[] }[] {
   return [...named, ...unnamed]
 }
 
-export default function VideoGrid({ videos, onViewDetail, onRefresh, selectable, selectedIds, onToggleSelect, sortBy }: Props) {
+export default function VideoGrid({ videos, onViewDetail, onRefresh, selectable, selectedIds, onToggleSelect, sortBy, centerIndex }: Props) {
   // 非系列排序 → 平铺（默认）
   if (sortBy !== 'series') {
     return (
@@ -36,7 +47,7 @@ export default function VideoGrid({ videos, onViewDetail, onRefresh, selectable,
         {videos.map((video, index) => (
           <div
             key={video.id}
-            style={{ animation: `slideUp 0.3s ease-out ${index * 0.03}s both` }}
+            style={cardAnim(index, centerIndex)}
           >
             <VideoCard
               video={video}
@@ -72,21 +83,21 @@ export default function VideoGrid({ videos, onViewDetail, onRefresh, selectable,
           )}
           {!section.series && hasNamed && <div className="series-divider" />}
           <div className="video-grid">
-            {section.videos.map(video => (
-              <div
-                key={video.id}
-                style={{ animation: `slideUp 0.3s ease-out ${animIndex++ * 0.03}s both` }}
-              >
-                <VideoCard
-                  video={video}
-                  onViewDetail={onViewDetail}
-                  onRefresh={onRefresh}
-                  selectable={selectable}
-                  selected={selectedIds?.has(video.id)}
-                  onToggleSelect={onToggleSelect}
-                />
-              </div>
-            ))}
+            {section.videos.map(video => {
+              const idx = animIndex++
+              return (
+                <div key={video.id} style={cardAnim(idx, centerIndex)}>
+                  <VideoCard
+                    video={video}
+                    onViewDetail={onViewDetail}
+                    onRefresh={onRefresh}
+                    selectable={selectable}
+                    selected={selectedIds?.has(video.id)}
+                    onToggleSelect={onToggleSelect}
+                  />
+                </div>
+              )
+            })}
           </div>
         </div>
       ))}
