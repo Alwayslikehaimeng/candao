@@ -2,6 +2,7 @@ import { ipcMain, shell, dialog, BrowserWindow } from 'electron'
 import {
   listVideos,
   getVideo,
+  getVideoByCode,
   createVideo,
   updateVideo,
   deleteVideo,
@@ -55,6 +56,10 @@ export function registerIpcHandlers(): void {
   })
 
   ipcMain.handle('video:create', (_, data) => {
+    const existing = getVideoByCode(data.code)
+    if (existing) {
+      throw new Error(`番号 ${data.code} 已存在：${existing.file_path}`)
+    }
     return createVideo(data)
   })
 
