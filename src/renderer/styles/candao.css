@@ -1025,7 +1025,10 @@ body {
 .detail-topbar-code {
   font-size: 16px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--candao-text-secondary);
+}
+.theme-wallpaper .detail-topbar-code {
+  color: #ffffff !important;
 }
 
 .detail-topbar-spacer {

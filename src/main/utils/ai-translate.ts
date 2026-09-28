@@ -160,23 +160,37 @@ export async function aiTranslate(text: string, type: 'title' | 'description' | 
 不要输出解释。`
   }
 
-  try {
-    const proxyConfig = await getProxyConfig()
-    const res = await axios.post(`${apiBase}/chat/completions`, {
+  const request = (maxTokens: number) => {
+    const proxyConfig = getProxyConfig()
+    return proxyConfig.then(pc => axios.post(`${apiBase}/chat/completions`, {
       model: modelName,
       messages: [
         { role: 'system', content: prompts[type] },
         { role: 'user', content: text }
       ],
-      max_tokens: type === 'description' ? 1500 : 1000,
+      max_tokens: maxTokens,
       temperature: 0.3
     }, {
-      ...proxyConfig,
+      ...pc,
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       }
-    })
+    }))
+  }
+
+  try {
+    // DeepSeek 推理模型的思考过程会消耗 max_tokens，长文本思考可能耗尽上限导致 content 为空，
+    // 此时用更大的上限重试一次
+    let res = await request(type === 'description' ? 1500 : 1000)
+    let choice = res.data.choices?.[0]
+    let result = choice?.message?.content?.trim()
+    if (!result && choice?.finish_reason === 'length') {
+      console.log('[AI翻译] 思考耗尽token，加大上限重试')
+      res = await request(type === 'description' ? 4000 : 3000)
+      choice = res.data.choices?.[0]
+      result = choice?.message?.content?.trim()
+    }
 
     // DeepSeek 原始响应调试
     console.log('=== DEEPSEEK RAW RESPONSE ===')
@@ -188,7 +202,6 @@ export async function aiTranslate(text: string, type: 'title' | 'description' | 
     console.log('finish_reason:', res.data?.choices?.[0]?.finish_reason)
     console.log('usage:', res.data?.usage)
 
-    const result = res.data.choices?.[0]?.message?.content?.trim()
     console.log('[AI翻译] 原文:', text.substring(0, 50))
     console.log('[AI翻译] 译文:', result?.substring(0, 50) || '无')
     return result || text
