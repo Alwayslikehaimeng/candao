@@ -33,7 +33,8 @@ function getLastInsertRowId(): number {
   return result ? result.id : 0
 }
 
-export function listVideos(filters: VideoFilters = {}): Video[] {
+// 构建查询 SQL（listVideos / listVideoIds 共用），返回可绑定参数的 SQL
+function buildListSql(filters: VideoFilters = {}): { sql: string; params: any[] } {
   let sql = `
     SELECT DISTINCT v.* FROM videos v
     LEFT JOIN video_actors va ON v.id = va.video_id
@@ -86,6 +87,11 @@ export function listVideos(filters: VideoFilters = {}): Video[] {
   const sortOrder = filters.sortOrder || 'desc'
   sql += ` ORDER BY v.${sortBy} ${sortOrder}`
 
+  return { sql, params }
+}
+
+export function listVideos(filters: VideoFilters = {}): Video[] {
+  const { sql, params } = buildListSql(filters)
   const videos = queryAll(sql, params) as Video[]
 
   return videos.map((v) => ({
@@ -94,6 +100,13 @@ export function listVideos(filters: VideoFilters = {}): Video[] {
     tags: getVideoTags(v.id),
     sample_images: getVideoSampleImages(v.id)
   }))
+}
+
+/** 只返回筛选结果中的视频 id（随机播放池用，避免拉取完整详情） */
+export function listVideoIds(filters: VideoFilters = {}): number[] {
+  const { sql, params } = buildListSql(filters)
+  const rows = queryAll(sql.replace('SELECT DISTINCT v.*', 'SELECT DISTINCT v.id'), params)
+  return rows.map((r) => r.id)
 }
 
 export function getVideo(id: number): Video | null {

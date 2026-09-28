@@ -23,7 +23,7 @@ interface ElectronAPI {
   scanFolder: (folderPath: string) => Promise<ScanResult[]>
   parseCode: (filename: string) => Promise<string | null>
   play: (filePath: string) => Promise<void>
-  randomPlay: () => Promise<Video | null>
+  randomPlay: (filters?: VideoFilters) => Promise<Video | null>
   probeVideo: (filePath: string) => Promise<{ success: boolean; data?: VideoInfo; error?: string }>
   getProxy: () => Promise<ProxyConfig>
   setProxy: (config: ProxyConfig) => Promise<void>

@@ -1,6 +1,7 @@
 import { ipcMain, shell, dialog, BrowserWindow } from 'electron'
 import {
   listVideos,
+  listVideoIds,
   getVideo,
   getVideoByCode,
   createVideo,
@@ -11,6 +12,8 @@ import {
   getTagsWithCount,
   getCategoryCounts
 } from '../database/video'
+import { buildPool, takeFromBag, recordPlay } from '../utils/shuffle-bag'
+import type { ShuffleBag } from '../utils/shuffle-bag'
 import { scanFolder, parseCode } from '../scanner/scanner'
 import { probeVideo } from '../ffprobe/probe'
 import { fetchFanza } from '../crawler/fanza'
@@ -24,11 +27,59 @@ import { getCoversDir, getSetting, setSetting, getDb } from '../database/schema'
 import { setApiKey, setApiBase, getApiKey, setModel } from '../utils/ai-translate'
 import { detectSystemProxy } from '../utils/proxy'
 import { join } from 'path'
-import type { VideoFilters, CrawlResult } from '../../shared/types'
+import type { Video, VideoFilters, CrawlResult } from '../../shared/types'
 
 let proxyConfig = { enabled: false, protocol: 'http' as const, host: '', port: 0 }
 
+// ===== 随机播放池（Shuffle Bag）状态 =====
+// 持久化在 settings 表（shuffle_bag_state 键），重启后恢复未完成的池
+const SHUFFLE_KEY = 'shuffle_bag_state'
+let shuffleBag: ShuffleBag = { pool: [], key: '', recentlyPlayed: [] }
+
+function loadShuffleBag(): void {
+  const saved = getSetting(SHUFFLE_KEY)
+  if (!saved) return
+  try {
+    const parsed = JSON.parse(saved)
+    if (Array.isArray(parsed.pool) && typeof parsed.key === 'string' && Array.isArray(parsed.recentlyPlayed)) {
+      // 过滤非数字脏数据，防止恢复的池中混入非法元素导致 getVideo 绑定异常
+      shuffleBag = {
+        pool: parsed.pool.filter((v: unknown) => Number.isFinite(v)),
+        key: parsed.key,
+        recentlyPlayed: parsed.recentlyPlayed.filter((v: unknown) => Number.isFinite(v))
+      }
+      console.log(`[随机播放] 已恢复播放池（剩余 ${shuffleBag.pool.length} 个）`)
+    }
+  } catch {}
+}
+
+function saveShuffleBag(): void {
+  setSetting(SHUFFLE_KEY, JSON.stringify(shuffleBag))
+}
+
+// 从播放池取一个视频：筛选指纹变化或池耗尽时重建池
+function nextRandomVideo(filters: VideoFilters = {}): Video | null {
+  const key = JSON.stringify(filters)
+  if (shuffleBag.key !== key || shuffleBag.pool.length === 0) {
+    const ids = listVideoIds(filters)
+    shuffleBag = {
+      pool: buildPool(ids, shuffleBag.recentlyPlayed),
+      key,
+      recentlyPlayed: shuffleBag.recentlyPlayed
+    }
+    console.log(`[随机播放] 重建播放池（共 ${ids.length} 个视频）`)
+  }
+  const id = takeFromBag(shuffleBag, (vid) => getVideo(vid) !== null)
+  if (id == null) return null // 池耗尽且无有效视频
+  shuffleBag.recentlyPlayed = recordPlay(shuffleBag.recentlyPlayed, id)
+  // 重建 + 取出合并为一次保存，避免每次点击多次全库写盘
+  saveShuffleBag()
+  return getVideo(id)
+}
+
 export function registerIpcHandlers(): void {
+  loadShuffleBag()
+
   // 启动时从数据库加载代理设置，无则自动检测系统代理
   const savedProxy = getSetting('proxy_config')
   if (savedProxy) {
@@ -405,8 +456,8 @@ export function registerIpcHandlers(): void {
     shell.openPath(filePath)
   })
 
-  ipcMain.handle('player:randomPlay', () => {
-    const video = getRandomVideo()
+  ipcMain.handle('player:randomPlay', (_, filters?: VideoFilters) => {
+    const video = nextRandomVideo(filters || {})
     if (video) {
       shell.openPath(video.file_path)
     }

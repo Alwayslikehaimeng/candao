@@ -44,7 +44,7 @@ const api = {
 
   // 播放
   play: (filePath: string): Promise<void> => ipcRenderer.invoke('player:play', filePath),
-  randomPlay: (): Promise<Video | null> => ipcRenderer.invoke('player:randomPlay'),
+  randomPlay: (filters?: VideoFilters): Promise<Video | null> => ipcRenderer.invoke('player:randomPlay', filters),
 
   // 视频信息
   probeVideo: (filePath: string): Promise<{ success: boolean; data?: VideoInfo; error?: string }> =>

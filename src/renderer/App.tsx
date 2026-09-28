@@ -64,7 +64,8 @@ export default function App() {
   }
 
   const handleRandomPlay = async () => {
-    const video = await window.api.randomPlay()
+    // 传入当前筛选条件：随机播放池与筛选结果绑定，筛选变化时自动重建
+    const video = await window.api.randomPlay(filters)
     if (!video) {
       message.info('媒体库为空')
       return
